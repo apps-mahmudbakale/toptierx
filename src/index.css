@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface text-on-surface font-body antialiased;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-headline;
+  }
+}
+
+@layer components {
+  .section-label {
+    @apply text-xs font-semibold tracking-widest uppercase text-brand-gold font-body;
+    letter-spacing: 0.1em;
+  }
+
+  .container-max {
+    @apply max-w-container mx-auto px-6 lg:px-16;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 bg-brand-black text-white font-body font-semibold text-sm
+      px-7 py-3.5 rounded-xl transition-all duration-300
+      hover:shadow-gold-glow hover:bg-neutral-800 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 border border-outline-variant text-on-surface font-body font-semibold text-sm
+      px-7 py-3.5 rounded-xl transition-all duration-300
+      hover:border-brand-gold hover:text-brand-gold active:scale-95;
+  }
+
+  .btn-gold {
+    @apply inline-flex items-center gap-2 bg-brand-gold text-brand-black font-body font-semibold text-sm
+      px-8 py-4 rounded-xl transition-all duration-300
+      hover:bg-brand-gold-light hover:shadow-gold-glow active:scale-95;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-glass border border-white/60 rounded-xl shadow-card;
+  }
+}
+
+@layer utilities {
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #D4AF37, #E9C349, #D4AF37);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-glass {
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
+  }
+}
