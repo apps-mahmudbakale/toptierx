@@ -1,35 +1,55 @@
-import { useState } from 'react'
+import { useState, useContext } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { EventContext } from '../context/EventContext'
 import { ArrowLeft, Check, ShieldCheck, CreditCard, Wallet } from 'lucide-react'
 import SectionLabel from '../components/ui/SectionLabel'
-
-const ticketTiers = [
-  {
-    id: 'general',
-    name: 'General Access',
-    price: '$500',
-    features: ['Access to main event areas', 'Complimentary welcome drinks', 'Standard seating'],
-  },
-  {
-    id: 'vip',
-    name: 'VIP Experience',
-    price: '$1,200',
-    features: ['Priority entrance', 'Exclusive VIP lounge access', 'Premium open bar', 'Front-row seating'],
-    popular: true
-  },
-  {
-    id: 'elite',
-    name: 'Elite Table (Groups of 4)',
-    price: '$4,500',
-    features: ['Private table service', 'Dedicated concierge', 'Meet & greet with hosts', 'Luxury gift bag'],
-  }
-]
 
 export default function Ticketing() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [selectedTier, setSelectedTier] = useState('vip')
+  const { getEventById } = useContext(EventContext)
+  const event = getEventById(id)
+  
+  const [selectedTier, setSelectedTier] = useState(null)
+  const [quantity, setQuantity] = useState(1)
   const [paymentMethod, setPaymentMethod] = useState('paystack')
+
+  if (!event) {
+    return (
+      <div className="min-h-screen pt-32 pb-20 flex flex-col items-center justify-center">
+        <h1 className="font-headline text-4xl mb-4 text-on-surface">Event not found</h1>
+        <Link to="/" className="text-brand-gold hover:underline">Return to home</Link>
+      </div>
+    )
+  }
+
+  // Use ticket categories if available, otherwise create default
+  const ticketTiers = event.ticketCategories && event.ticketCategories.length > 0 
+    ? event.ticketCategories.map((cat, idx) => ({
+        id: `tier-${idx}`,
+        name: cat.name,
+        price: cat.price,
+        priceDisplay: `₦${cat.price.toLocaleString('en-NG')}`,
+        features: [`${cat.name} tier for ${event.title}`],
+        popular: idx === 0
+      }))
+    : [
+        {
+          id: 'general',
+          name: 'General Access',
+          price: event.ticketPrice || 100000,
+          priceDisplay: `₦${(event.ticketPrice || 100000).toLocaleString('en-NG')}`,
+          features: ['Access to main event areas', 'Complimentary welcome drinks', 'Standard seating'],
+        }
+      ]
+
+  // Set first tier as selected by default
+  if (!selectedTier && ticketTiers.length > 0) {
+    setSelectedTier(ticketTiers[0].id)
+  }
+
+  const selectedTicket = ticketTiers.find(t => t.id === selectedTier)
+  const totalPrice = selectedTicket ? selectedTicket.price * quantity : 0
 
   const handleCheckout = (e) => {
     e.preventDefault()
@@ -50,14 +70,14 @@ export default function Ticketing() {
         <div className="text-center mb-16">
           <SectionLabel>Ticketing</SectionLabel>
           <h1 className="font-headline text-4xl md:text-5xl font-bold text-on-surface mt-2 mb-4">
-            Select Your Experience
+            {event.title}
           </h1>
           <p className="font-body text-on-surface-variant max-w-2xl mx-auto">
             Secure your attendance with our exclusive tier options. Availability is strictly limited to ensure an intimate atmosphere.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+        <div className={`grid gap-6 mb-16 ${ticketTiers.length === 1 ? 'grid-cols-1 md:grid-cols-1 max-w-2xl mx-auto' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
           {ticketTiers.map((tier) => (
             <div 
               key={tier.id}
@@ -75,7 +95,7 @@ export default function Ticketing() {
               )}
               
               <h3 className="font-headline text-xl font-semibold text-on-surface mb-2">{tier.name}</h3>
-              <div className="text-3xl font-bold text-brand-black mb-6 font-headline">{tier.price}</div>
+              <div className="text-3xl font-bold text-brand-gold mb-6 font-headline">{tier.priceDisplay}</div>
               
               <ul className="space-y-4 mb-8">
                 {tier.features.map((feature, idx) => (
@@ -102,6 +122,33 @@ export default function Ticketing() {
           <h2 className="font-headline text-2xl font-semibold mb-8 text-on-surface">Checkout & Payment</h2>
           
           <form className="space-y-8" onSubmit={handleCheckout}>
+            
+            {/* Order Summary */}
+            <div className="space-y-4 p-6 bg-surface rounded-xl border border-outline-variant/30">
+              <h3 className="font-headline font-semibold text-on-surface mb-4">Order Summary</h3>
+              <div className="flex justify-between items-center py-2 border-b border-outline-variant/30">
+                <span className="font-body text-on-surface-variant">{selectedTicket?.name || 'Ticket'}</span>
+                <span className="font-body font-semibold">₦{(selectedTicket?.price || 0).toLocaleString('en-NG')}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-outline-variant/30">
+                <label className="font-body text-on-surface-variant">
+                  Quantity:
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="10"
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    className="ml-2 w-16 px-2 py-1 border border-outline-variant rounded font-body focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                  />
+                </label>
+                <span className="font-body font-semibold">× {quantity}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 text-lg font-headline font-bold">
+                <span>Total</span>
+                <span className="text-brand-gold">₦{totalPrice.toLocaleString('en-NG')}</span>
+              </div>
+            </div>
             
             {/* Guest Info */}
             <div className="space-y-6">
@@ -183,7 +230,7 @@ export default function Ticketing() {
                 Secure 256-bit Encrypted Checkout
               </div>
               <button type="submit" className="btn-primary w-full md:w-auto justify-center">
-                Proceed to Payment
+                Proceed to Payment (₦{totalPrice.toLocaleString('en-NG')})
               </button>
             </div>
           </form>

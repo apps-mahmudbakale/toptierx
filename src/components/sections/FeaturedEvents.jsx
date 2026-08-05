@@ -1,35 +1,48 @@
+import { useContext } from 'react'
+import { EventContext } from '../../context/EventContext'
 import EventCard from '../ui/EventCard'
 import SectionLabel from '../ui/SectionLabel'
 import { ArrowRight } from 'lucide-react'
 
-const events = [
-  {
-    id: 'gala-obsidian',
-    image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&q=80',
-    category: 'Gala',
-    date: 'Sep 12, 2026',
-    title: 'The Obsidian Gala — An Evening of Timeless Elegance',
-    venue: 'The Ritz London',
-  },
-  {
-    id: 'summit-luxe',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80',
-    category: 'Networking',
-    date: 'Oct 03, 2026',
-    title: 'Summit Luxe — Where Visionaries Connect',
-    venue: 'Four Seasons, Mayfair',
-  },
-  {
-    id: 'soiree-privee',
-    image: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800&q=80',
-    category: 'Private Dinner',
-    date: 'Oct 21, 2026',
-    title: 'Soirée Privée — An Exclusive Culinary Journey',
-    venue: 'Sketch, London',
-  },
-]
-
 export default function FeaturedEvents() {
+  const { events, loading, error } = useContext(EventContext)
+
+  if (loading) {
+    return (
+      <section id="events" className="py-28 bg-surface">
+        <div className="container-max">
+          <div className="text-center">
+            <p className="font-body text-on-surface-variant">Loading events...</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section id="events" className="py-28 bg-surface">
+        <div className="container-max">
+          <div className="text-center">
+            <p className="font-body text-error">Failed to load events: {error}</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (events.length === 0) {
+    return (
+      <section id="events" className="py-28 bg-surface">
+        <div className="container-max">
+          <div className="text-center">
+            <p className="font-body text-on-surface-variant">No events available at this time.</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section id="events" className="py-28 bg-surface">
       <div className="container-max">
@@ -51,7 +64,7 @@ export default function FeaturedEvents() {
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
           {events.map((event, i) => (
-            <EventCard key={i} {...event} delay={i * 100} />
+            <EventCard key={event.id} {...event} delay={i * 100} />
           ))}
         </div>
       </div>

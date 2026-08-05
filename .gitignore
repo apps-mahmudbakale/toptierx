@@ -50,3 +50,7 @@ coverage/
 
 # Vite
 .vite/
+
+# Node
+.node_version
+
