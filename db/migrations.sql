@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS events (
   description TEXT,
   itinerary JSONB DEFAULT '[]',
   ticket_categories JSONB DEFAULT '[]',
+  payment_link_identifier VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

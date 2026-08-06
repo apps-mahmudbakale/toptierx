@@ -39,6 +39,7 @@ export default function Dashboard() {
     venue: '',
     capacity: '',
     ticketPrice: '',
+    paymentLinkIdentifier: '',
     image: '',
     description: '',
     itinerary: [],
@@ -114,6 +115,7 @@ export default function Dashboard() {
         venue: '',
         capacity: '',
         ticketPrice: '',
+        paymentLinkIdentifier: '',
         image: '',
         description: '',
         itinerary: [],
@@ -168,6 +170,7 @@ export default function Dashboard() {
       venue: '',
       capacity: '',
       ticketPrice: '',
+      paymentLinkIdentifier: '',
       image: '',
       description: '',
       itinerary: [],
@@ -395,6 +398,21 @@ export default function Dashboard() {
                         min="0"
                         className="w-full px-4 py-2 border border-outline-variant rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-brand-gold"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-body font-semibold text-on-surface mb-2">
+                        Hyparrow Payment Link Identifier
+                      </label>
+                      <input
+                        type="text"
+                        name="paymentLinkIdentifier"
+                        value={formData.paymentLinkIdentifier}
+                        onChange={handleInputChange}
+                        placeholder="e.g., link_abc123xyz (from Hyparrow dashboard)"
+                        className="w-full px-4 py-2 border border-outline-variant rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                      />
+                      <p className="text-xs text-on-surface-variant mt-1">Get this from your Hyparrow dashboard Payment Links section</p>
                     </div>
                   </div>
 

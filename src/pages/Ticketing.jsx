@@ -1,8 +1,9 @@
 import { useState, useContext } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { EventContext } from '../context/EventContext'
-import { ArrowLeft, Check, ShieldCheck, CreditCard, Wallet } from 'lucide-react'
+import { ArrowLeft, Check, ShieldCheck, Loader } from 'lucide-react'
 import SectionLabel from '../components/ui/SectionLabel'
+import { hyparrowService } from '../services/hyparrow'
 
 export default function Ticketing() {
   const { id } = useParams()
@@ -12,7 +13,15 @@ export default function Ticketing() {
   
   const [selectedTier, setSelectedTier] = useState(null)
   const [quantity, setQuantity] = useState(1)
-  const [paymentMethod, setPaymentMethod] = useState('paystack')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: ''
+  })
 
   if (!event) {
     return (
@@ -22,6 +31,9 @@ export default function Ticketing() {
       </div>
     )
   }
+
+  // Generate payment link identifier from event if not provided
+  const paymentLinkIdentifier = event.paymentLinkIdentifier || `event-${event.id}-${Date.now()}`
 
   // Use ticket categories if available, otherwise create default
   const ticketTiers = event.ticketCategories && event.ticketCategories.length > 0 
@@ -51,10 +63,72 @@ export default function Ticketing() {
   const selectedTicket = ticketTiers.find(t => t.id === selectedTier)
   const totalPrice = selectedTicket ? selectedTicket.price * quantity : 0
 
-  const handleCheckout = (e) => {
+  const handleCheckout = async (e) => {
     e.preventDefault()
-    // Simulate API call and redirect to dashboard
-    navigate('/dashboard')
+    
+    // Validate form
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      setError('Please fill in all guest information')
+      return
+    }
+
+    if (!selectedTicket) {
+      setError('Please select a ticket tier')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Initialize Hyparrow payment with payment link identifier
+      hyparrowService.initialize({
+        paymentLinkIdentifier: paymentLinkIdentifier,
+        email: formData.email,
+        customerName: `${formData.firstName} ${formData.lastName}`,
+        metadata: {
+          eventId: event.id,
+          eventTitle: event.title,
+          ticketTier: selectedTicket.name,
+          quantity: quantity,
+          totalAmount: totalPrice
+        },
+        onSuccess: async (response) => {
+          // Save booking after successful payment
+          await saveBooking(response)
+        },
+        onClose: () => {
+          setLoading(false)
+          setError('Payment was not completed')
+        },
+        onError: (error) => {
+          setLoading(false)
+          setError(error.message || 'Payment failed')
+        }
+      })
+    } catch (err) {
+      console.error('Checkout error:', err)
+      setError(err.message || 'An error occurred during checkout')
+      setLoading(false)
+    }
+  }
+
+  const saveBooking = async (paymentResponse) => {
+    try {
+      // Save booking to database - for now just redirect
+      alert(`Payment successful! Booking confirmed for ${formData.email}`)
+      navigate('/dashboard')
+    } catch (err) {
+      console.error('Error saving booking:', err)
+      setError('Payment was successful but booking could not be saved')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   return (
@@ -121,6 +195,12 @@ export default function Ticketing() {
         <div className="glass-card p-8 md:p-12 max-w-3xl mx-auto border-t-4 border-t-brand-black">
           <h2 className="font-headline text-2xl font-semibold mb-8 text-on-surface">Checkout & Payment</h2>
           
+          {error && (
+            <div className="mb-6 p-4 bg-error/10 border border-error rounded-lg">
+              <p className="text-error text-sm font-body">{error}</p>
+            </div>
+          )}
+          
           <form className="space-y-8" onSubmit={handleCheckout}>
             
             {/* Order Summary */}
@@ -156,71 +236,40 @@ export default function Ticketing() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-body font-semibold text-on-surface mb-2">First Name</label>
-                  <input required type="text" className="w-full bg-transparent border-b border-outline-variant py-2 font-body focus:outline-none focus:border-brand-gold transition-colors" placeholder="John" />
+                  <input 
+                    required 
+                    type="text" 
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    className="w-full bg-transparent border-b border-outline-variant py-2 font-body focus:outline-none focus:border-brand-gold transition-colors" 
+                    placeholder="John" 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-body font-semibold text-on-surface mb-2">Last Name</label>
-                  <input required type="text" className="w-full bg-transparent border-b border-outline-variant py-2 font-body focus:outline-none focus:border-brand-gold transition-colors" placeholder="Doe" />
+                  <input 
+                    required 
+                    type="text" 
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    className="w-full bg-transparent border-b border-outline-variant py-2 font-body focus:outline-none focus:border-brand-gold transition-colors" 
+                    placeholder="Doe" 
+                  />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-body font-semibold text-on-surface mb-2">Email Address</label>
-                <input required type="email" className="w-full bg-transparent border-b border-outline-variant py-2 font-body focus:outline-none focus:border-brand-gold transition-colors" placeholder="john@example.com" />
-              </div>
-            </div>
-
-            {/* Payment Method */}
-            <div className="space-y-6 pt-4">
-              <h3 className="text-lg font-headline font-semibold text-on-surface border-b border-outline-variant pb-2">Payment Method</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Paystack Option */}
-                <label 
-                  className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border-2 transition-smooth ${
-                    paymentMethod === 'paystack' 
-                      ? 'border-brand-gold bg-brand-gold/5' 
-                      : 'border-outline-variant hover:border-brand-gold/50'
-                  }`}
-                >
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="paystack" 
-                    checked={paymentMethod === 'paystack'}
-                    onChange={() => setPaymentMethod('paystack')}
-                    className="w-4 h-4 text-brand-gold focus:ring-brand-gold"
-                  />
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                      <CreditCard size={20} />
-                    </div>
-                    <span className="font-body font-semibold text-on-surface">Paystack</span>
-                  </div>
-                </label>
-
-                {/* Hyperpay Option */}
-                <label 
-                  className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border-2 transition-smooth ${
-                    paymentMethod === 'hyperpay' 
-                      ? 'border-brand-gold bg-brand-gold/5' 
-                      : 'border-outline-variant hover:border-brand-gold/50'
-                  }`}
-                >
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="hyperpay" 
-                    checked={paymentMethod === 'hyperpay'}
-                    onChange={() => setPaymentMethod('hyperpay')}
-                    className="w-4 h-4 text-brand-gold focus:ring-brand-gold"
-                  />
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-                      <Wallet size={20} />
-                    </div>
-                    <span className="font-body font-semibold text-on-surface">Hyperpay</span>
-                  </div>
-                </label>
+                <input 
+                  required 
+                  type="email" 
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full bg-transparent border-b border-outline-variant py-2 font-body focus:outline-none focus:border-brand-gold transition-colors" 
+                  placeholder="john@example.com" 
+                />
               </div>
             </div>
 
@@ -229,8 +278,19 @@ export default function Ticketing() {
                 <ShieldCheck size={18} className="text-brand-gold" />
                 Secure 256-bit Encrypted Checkout
               </div>
-              <button type="submit" className="btn-primary w-full md:w-auto justify-center">
-                Proceed to Payment (₦{totalPrice.toLocaleString('en-NG')})
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="btn-gold w-full md:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader size={18} className="animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  `Pay Now ₦${totalPrice.toLocaleString('en-NG')}`
+                )}
               </button>
             </div>
           </form>

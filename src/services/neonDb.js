@@ -9,6 +9,7 @@ export const neonService = {
       return result.map(event => ({
         ...event,
         ticketPrice: event.ticket_price,
+        paymentLinkIdentifier: event.payment_link_identifier,
         ticketCategories: typeof event.ticket_categories === 'string' 
           ? JSON.parse(event.ticket_categories) 
           : (event.ticket_categories || []),
@@ -32,6 +33,7 @@ export const neonService = {
       return {
         ...event,
         ticketPrice: event.ticket_price,
+        paymentLinkIdentifier: event.payment_link_identifier,
         ticketCategories: typeof event.ticket_categories === 'string'
           ? JSON.parse(event.ticket_categories)
           : (event.ticket_categories || []),
@@ -49,7 +51,7 @@ export const neonService = {
     try {
       const result = await sql`
         INSERT INTO events 
-        (title, category, date, time, venue, capacity, ticket_price, image, description, itinerary, ticket_categories)
+        (title, category, date, time, venue, capacity, ticket_price, image, description, itinerary, ticket_categories, payment_link_identifier)
         VALUES (
           ${eventData.title},
           ${eventData.category || null},
@@ -61,7 +63,8 @@ export const neonService = {
           ${eventData.image || null},
           ${eventData.description || null},
           ${JSON.stringify(eventData.itinerary || [])},
-          ${JSON.stringify(eventData.ticketCategories || [])}
+          ${JSON.stringify(eventData.ticketCategories || [])},
+          ${eventData.paymentLinkIdentifier || null}
         )
         RETURNING *
       `
@@ -72,6 +75,7 @@ export const neonService = {
       return {
         ...event,
         ticketPrice: event.ticket_price,
+        paymentLinkIdentifier: event.payment_link_identifier,
         ticketCategories: typeof event.ticket_categories === 'string'
           ? JSON.parse(event.ticket_categories)
           : (event.ticket_categories || []),
@@ -101,6 +105,7 @@ export const neonService = {
           description = ${eventData.description || null},
           itinerary = ${JSON.stringify(eventData.itinerary || [])},
           ticket_categories = ${JSON.stringify(eventData.ticketCategories || [])},
+          payment_link_identifier = ${eventData.paymentLinkIdentifier || null},
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ${id}
         RETURNING *
@@ -112,6 +117,7 @@ export const neonService = {
       return {
         ...event,
         ticketPrice: event.ticket_price,
+        paymentLinkIdentifier: event.payment_link_identifier,
         ticketCategories: typeof event.ticket_categories === 'string'
           ? JSON.parse(event.ticket_categories)
           : (event.ticket_categories || []),
