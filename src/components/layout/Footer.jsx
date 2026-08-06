@@ -31,9 +31,6 @@ export default function Footer() {
                 alt="TopTier Logo" 
                 className="h-8 w-auto"
               />
-              <span className="font-headline font-semibold text-xl">
-                TopTier<span className="text-brand-gold">.</span>
-              </span>
             </div>
             <p className="text-white/50 text-sm font-body leading-relaxed">
               Crafting extraordinary experiences for the world's most discerning clientele. Every event, a masterpiece.
@@ -60,7 +57,7 @@ export default function Footer() {
             <ul className="flex flex-col gap-3 text-white/60 text-sm font-body">
               <li><a href="mailto:info@toptierxperienze.com" className="hover:text-brand-gold transition-smooth">info@toptierxperienze.com</a></li>
               <li><a href="tel:+2349032960659" className="hover:text-brand-gold transition-smooth">+234 903 296 0659</a></li>
-              <li>1 Mayfair Place, London W1J 8AJ</li>
+              <li>Abuja</li>
             </ul>
           </div>
 

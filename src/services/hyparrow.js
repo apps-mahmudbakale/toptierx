@@ -79,7 +79,7 @@ export const hyparrowService = {
       }
 
       // Call POST /checkout/pay/{identifier} endpoint
-      const response = await fetch(`https://api.hyparrow.com/checkout/pay/${data.identifier}`, {
+      const response = await fetch(`https://api.hyparrow.cloud/api/v1/checkout/pay/${data.identifier}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${publicKey}`,
