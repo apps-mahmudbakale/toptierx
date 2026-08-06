@@ -132,8 +132,25 @@ export default function Ticketing() {
   }
 
   return (
-    <main className="pt-32 pb-20 bg-surface min-h-screen">
-      <div className="container-max max-w-5xl">
+    <>
+      <main className="pt-20 pb-20 relative min-h-screen">
+        {/* Background image with gradient overlay */}
+        <div className="absolute inset-0 -z-10">
+          {event.image && (
+            <>
+              <img
+                src={event.image}
+                alt={event.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+              <div className="absolute inset-0 bg-gradient-to-t from-surface via-black/40 to-transparent" />
+            </>
+          )}
+          {!event.image && <div className="absolute inset-0 bg-surface" />}
+        </div>
+
+      <div className="container-max max-w-5xl relative z-10">
         
         {/* Back Link */}
         <Link to={`/event/${id}`} className="inline-flex items-center gap-2 text-on-surface-variant hover:text-brand-gold transition-smooth mb-10 font-body text-sm font-medium">
@@ -298,5 +315,6 @@ export default function Ticketing() {
 
       </div>
     </main>
+    </>
   )
 }

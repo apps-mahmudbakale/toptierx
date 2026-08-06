@@ -1,4 +1,6 @@
-import { Camera, MessageCircle, Briefcase, Mail } from 'lucide-react'
+import { Heart, Share2, Briefcase, Mail } from 'lucide-react'
+import logoLight from '../../gofof.png'
+
 const navLinks = [
   { label: 'Events', href: '/#events' },
   { label: 'Venues', href: '/#venues' },
@@ -9,10 +11,10 @@ const navLinks = [
 const legalLinks = ['Privacy Policy', 'Terms of Service', 'Cookie Settings']
 
 const socials = [
-  { icon: Camera, href: '#', label: 'Instagram' },
-  { icon: MessageCircle, href: '#', label: 'X (Twitter)' },
+  { icon: Heart, href: '#', label: 'Instagram' },
+  { icon: Share2, href: '#', label: 'X (Twitter)' },
   { icon: Briefcase, href: '#', label: 'LinkedIn' },
-  { icon: Mail, href: '#', label: 'Email' },
+  { icon: Mail, href: 'mailto:info@toptierxperienze.com', label: 'Email' },
 ]
 
 export default function Footer() {
@@ -24,9 +26,11 @@ export default function Footer() {
           {/* Brand */}
           <div className="max-w-xs">
             <div className="flex items-center gap-2 mb-5">
-              <span className="w-7 h-7 rounded-sm bg-brand-gold flex items-center justify-center">
-                <span className="text-brand-black text-xs font-headline font-bold">T</span>
-              </span>
+              <img 
+                src={logoLight}
+                alt="TopTier Logo" 
+                className="h-8 w-auto"
+              />
               <span className="font-headline font-semibold text-xl">
                 TopTier<span className="text-brand-gold">.</span>
               </span>
@@ -54,8 +58,8 @@ export default function Footer() {
           <div>
             <p className="section-label text-white/30 mb-5">Contact</p>
             <ul className="flex flex-col gap-3 text-white/60 text-sm font-body">
-              <li>hello@toptierxperienz.com</li>
-              <li>+44 20 7946 0958</li>
+              <li><a href="mailto:info@toptierxperienze.com" className="hover:text-brand-gold transition-smooth">info@toptierxperienze.com</a></li>
+              <li><a href="tel:+2349032960659" className="hover:text-brand-gold transition-smooth">+234 903 296 0659</a></li>
               <li>1 Mayfair Place, London W1J 8AJ</li>
             </ul>
           </div>
