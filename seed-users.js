@@ -1,5 +1,10 @@
-import { pool } from './src/services/neonDb.js'
+import { neon } from '@neondatabase/serverless'
 import bcrypt from 'bcrypt'
+import dotenv from 'dotenv'
+
+dotenv.config()
+
+const sql = neon(process.env.VITE_DATABASE_URL || process.env.DATABASE_URL)
 
 const seedUsers = async () => {
   try {
@@ -16,27 +21,39 @@ const seedUsers = async () => {
     const userHashedPassword = await bcrypt.hash(userPassword, 10)
 
     // Insert admin user
-    const adminResult = await pool.query(
-      'INSERT INTO users (email, password, role) VALUES ($1, $2, $3) ON CONFLICT (email) DO NOTHING RETURNING id, email, role',
-      [adminEmail, adminHashedPassword, 'admin']
-    )
+    try {
+      const adminResult = await sql`
+        INSERT INTO users (email, password, role) 
+        VALUES (${adminEmail}, ${adminHashedPassword}, 'admin')
+        ON CONFLICT (email) DO NOTHING
+        RETURNING id, email, role
+      `
 
-    if (adminResult.rows.length > 0) {
-      console.log('✅ Admin user created:', adminResult.rows[0])
-    } else {
-      console.log('ℹ️  Admin user already exists')
+      if (adminResult.length > 0) {
+        console.log('✅ Admin user created:', adminResult[0])
+      } else {
+        console.log('ℹ️  Admin user already exists')
+      }
+    } catch (err) {
+      console.error('Error creating admin user:', err)
     }
 
     // Insert regular user
-    const userResult = await pool.query(
-      'INSERT INTO users (email, password, role) VALUES ($1, $2, $3) ON CONFLICT (email) DO NOTHING RETURNING id, email, role',
-      [userEmail, userHashedPassword, 'user']
-    )
+    try {
+      const userResult = await sql`
+        INSERT INTO users (email, password, role) 
+        VALUES (${userEmail}, ${userHashedPassword}, 'user')
+        ON CONFLICT (email) DO NOTHING
+        RETURNING id, email, role
+      `
 
-    if (userResult.rows.length > 0) {
-      console.log('✅ Regular user created:', userResult.rows[0])
-    } else {
-      console.log('ℹ️  Regular user already exists')
+      if (userResult.length > 0) {
+        console.log('✅ Regular user created:', userResult[0])
+      } else {
+        console.log('ℹ️  Regular user already exists')
+      }
+    } catch (err) {
+      console.error('Error creating regular user:', err)
     }
 
     console.log('\n📋 Login Credentials:')
