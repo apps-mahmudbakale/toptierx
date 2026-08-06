@@ -65,15 +65,26 @@ export default function EventDetails() {
   }
 
   return (
-    <main className="pt-20">
-      {/* Hero Header */}
-      <section className="relative h-[60vh] min-h-[500px] w-full flex items-end pb-16">
-        <img 
-          src={event.image} 
-          alt={event.title} 
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/50 to-transparent" />
+    <>
+      {/* Full page background */}
+      <div className="fixed inset-0 -z-50 w-full h-full">
+        {event.image && (
+          <>
+            <img 
+              src={event.image} 
+              alt={event.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-surface" />
+          </>
+        )}
+        {!event.image && <div className="absolute inset-0 bg-surface" />}
+      </div>
+
+      <main className="pt-20 relative z-10">
+        {/* Hero Header */}
+        <section className="relative h-[60vh] min-h-[500px] w-full flex items-end pb-16">
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/50 to-transparent" />
         
         <div className="container-max relative z-10">
           <Chip variant="dark" className="mb-6">{event.category}</Chip>
@@ -102,14 +113,14 @@ export default function EventDetails() {
       </section>
 
       {/* Content */}
-      <section className="py-16 bg-on-surface/2">
-        <div className="container-max grid grid-cols-1 lg:grid-cols-3 gap-16">
+      <section className="py-16 relative min-h-[800px]">
+        <div className="container-max grid grid-cols-1 lg:grid-cols-3 gap-16 relative z-10">
           
           {/* Main */}
           <div className="lg:col-span-2 space-y-12">
             <div>
-              <h2 className="font-headline text-3xl font-bold text-on-surface mb-4">Event Overview</h2>
-              <p className="text-on-surface-variant font-body leading-relaxed whitespace-pre-line">
+              <h2 className="font-headline text-3xl font-bold text-white mb-4">Event Overview</h2>
+              <p className="text-white/80 font-body leading-relaxed whitespace-pre-line">
                 {event.description}
               </p>
             </div>
@@ -117,14 +128,14 @@ export default function EventDetails() {
             {/* Itinerary */}
             {event.itinerary && event.itinerary.length > 0 && (
               <div>
-                <h2 className="font-headline text-3xl font-bold text-on-surface mb-6">Event Itinerary</h2>
+                <h2 className="font-headline text-3xl font-bold text-white mb-6">Event Itinerary</h2>
                 <div className="space-y-4">
                   {event.itinerary.map((item, i) => (
                     <div key={i} className="flex gap-6 items-start">
                       <div className="text-brand-gold font-headline font-bold text-lg min-w-fit">
                         {item.time}
                       </div>
-                      <div className="pt-1 text-on-surface-variant font-body">
+                      <div className="pt-1 text-white/70 font-body">
                         {item.desc}
                       </div>
                     </div>
@@ -136,28 +147,28 @@ export default function EventDetails() {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="glass-card p-8 sticky top-32 space-y-6">
+            <div className="glass-card bg-white/10 backdrop-blur-md p-8 sticky top-32 space-y-6 border border-white/20">
               <div>
-                <p className="text-on-surface-variant text-sm font-body mb-2">Venue</p>
-                <p className="font-headline font-semibold text-on-surface">{event.venue}</p>
+                <p className="text-white/60 text-sm font-body mb-2">Venue</p>
+                <p className="font-headline font-semibold text-white">{event.venue}</p>
               </div>
               <div>
-                <p className="text-on-surface-variant text-sm font-body mb-2">Date & Time</p>
-                <p className="font-headline font-semibold text-on-surface">{event.date}</p>
-                <p className="font-body text-on-surface-variant">{event.time}</p>
+                <p className="text-white/60 text-sm font-body mb-2">Date & Time</p>
+                <p className="font-headline font-semibold text-white">{event.date}</p>
+                <p className="font-body text-white/60">{event.time}</p>
               </div>
               <div>
-                <p className="text-on-surface-variant text-sm font-body mb-2">Capacity</p>
-                <p className="font-headline font-semibold text-on-surface">{event.capacity}</p>
+                <p className="text-white/60 text-sm font-body mb-2">Capacity</p>
+                <p className="font-headline font-semibold text-white">{event.capacity}</p>
               </div>
-              <div className="border-t border-outline-variant/30 pt-6">
-                <p className="text-on-surface-variant text-sm font-body mb-2">Ticket Price</p>
+              <div className="border-t border-white/20 pt-6">
+                <p className="text-white/60 text-sm font-body mb-2">Ticket Price</p>
                 {event.ticketCategories && event.ticketCategories.length > 0 ? (
                   <div>
                     <p className="font-headline text-3xl font-bold text-brand-gold">
                       ₦{Math.min(...event.ticketCategories.map(t => t.price || 0)).toLocaleString('en-NG')} - ₦{Math.max(...event.ticketCategories.map(t => t.price || 0)).toLocaleString('en-NG')}
                     </p>
-                    <p className="text-on-surface-variant text-xs mt-2">Price range from {event.ticketCategories.length} ticket categories</p>
+                    <p className="text-white/60 text-xs mt-2">Price range from {event.ticketCategories.length} ticket categories</p>
                   </div>
                 ) : (
                   <p className="font-headline text-3xl font-bold text-brand-gold">₦{event.ticketPrice || 0}</p>
@@ -175,5 +186,6 @@ export default function EventDetails() {
         </div>
       </section>
     </main>
+    </>
   )
 }

@@ -1,13 +1,12 @@
-import { useState, useContext } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useState, useContext, useEffect } from 'react'
+import { useParams, Link } from 'react-router-dom'
 import { EventContext } from '../context/EventContext'
-import { ArrowLeft, Check, ShieldCheck, Loader } from 'lucide-react'
+import { ArrowLeft, Check, Loader } from 'lucide-react'
 import SectionLabel from '../components/ui/SectionLabel'
-import { hyparrowService } from '../services/hyparrow'
+import { neonService } from '../services/neonDb'
 
 export default function Ticketing() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const { getEventById } = useContext(EventContext)
   const event = getEventById(id)
   
@@ -15,6 +14,8 @@ export default function Ticketing() {
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [bookingData, setBookingData] = useState(null)
   
   // Form state
   const [formData, setFormData] = useState({
@@ -23,12 +24,108 @@ export default function Ticketing() {
     email: ''
   })
 
+  // Check for payment success on mount (return from Hyparrow)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const status = params.get('status')
+    const reference = params.get('reference')
+    
+    if (status === 'success' || status === 'completed') {
+      console.log('✅ Payment confirmed:', reference)
+      handlePaymentSuccess(reference)
+    }
+  }, [])
+
+  // Save booking to Neon database after successful payment
+  const handlePaymentSuccess = async (paymentReference) => {
+    try {
+      setLoading(true)
+      
+      // Get stored booking data from sessionStorage
+      const storedBooking = sessionStorage.getItem('_pendingBooking')
+      if (!storedBooking) {
+        setError('Booking data not found')
+        setLoading(false)
+        return
+      }
+
+      const booking = JSON.parse(storedBooking)
+      
+      // Save booking to database
+      const result = await neonService.createBooking({
+        eventId: booking.eventId,
+        eventTitle: booking.eventTitle,
+        customerName: booking.customerName,
+        customerEmail: booking.customerEmail,
+        ticketCount: booking.ticketCount,
+        ticketPrice: booking.ticketPrice,
+        totalAmount: booking.totalAmount,
+        status: 'confirmed',
+        paymentReference: paymentReference
+      })
+
+      console.log('✅ Booking saved to database:', result)
+      setBookingData(result)
+      setPaymentSuccess(true)
+      
+      // Clear stored data
+      sessionStorage.removeItem('_pendingBooking')
+    } catch (err) {
+      console.error('Error saving booking:', err)
+      setError('Booking could not be saved. Please contact support.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!event) {
     return (
       <div className="min-h-screen pt-32 pb-20 flex flex-col items-center justify-center">
         <h1 className="font-headline text-4xl mb-4 text-on-surface">Event not found</h1>
         <Link to="/" className="text-brand-gold hover:underline">Return to home</Link>
       </div>
+    )
+  }
+
+  // Show success screen if payment was completed
+  if (paymentSuccess) {
+    return (
+      <main className="pt-32 pb-20 bg-surface min-h-screen flex items-center justify-center">
+        <div className="container-max max-w-2xl text-center">
+          <div className="mb-8">
+            <div className="w-20 h-20 rounded-full bg-brand-gold/20 flex items-center justify-center mx-auto mb-6">
+              <Check size={48} className="text-brand-gold" />
+            </div>
+          </div>
+          <h1 className="font-headline text-4xl md:text-5xl font-bold text-on-surface mb-4">
+            Payment Successful!
+          </h1>
+          <p className="font-body text-on-surface-variant text-lg mb-6 max-w-xl mx-auto">
+            Your booking has been confirmed. A confirmation email has been sent to your email address with your booking details and ticket information.
+          </p>
+          <div className="bg-white/50 rounded-lg p-6 mb-8 text-left">
+            <h2 className="font-headline text-lg font-semibold text-on-surface mb-4">Booking Summary</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Event:</span>
+                <span className="font-semibold text-on-surface">{event.title}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-on-surface-variant">Status:</span>
+                <span className="font-semibold text-brand-gold">Confirmed</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col md:flex-row gap-4 justify-center">
+            <Link to={`/event/${id}`} className="btn-ghost border border-on-surface-variant text-on-surface hover:border-brand-gold hover:text-brand-gold">
+              View Event Details
+            </Link>
+            <Link to="/" className="btn-gold">
+              Back to Home
+            </Link>
+          </div>
+        </div>
+      </main>
     )
   }
 
@@ -77,51 +174,36 @@ export default function Ticketing() {
       return
     }
 
+    if (!paymentLinkIdentifier) {
+      setError('Payment is not configured for this event')
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     try {
-      // Initialize Hyparrow payment with payment link identifier
-      hyparrowService.initialize({
-        paymentLinkIdentifier: paymentLinkIdentifier,
-        email: formData.email,
+      // Store booking data for after payment confirmation
+      const bookingData = {
+        eventId: event.id,
+        eventTitle: event.title,
         customerName: `${formData.firstName} ${formData.lastName}`,
-        metadata: {
-          eventId: event.id,
-          eventTitle: event.title,
-          ticketTier: selectedTicket.name,
-          quantity: quantity,
-          totalAmount: totalPrice
-        },
-        onSuccess: async (response) => {
-          // Save booking after successful payment
-          await saveBooking(response)
-        },
-        onClose: () => {
-          setLoading(false)
-          setError('Payment was not completed')
-        },
-        onError: (error) => {
-          setLoading(false)
-          setError(error.message || 'Payment failed')
-        }
-      })
+        customerEmail: formData.email,
+        ticketCount: quantity,
+        ticketPrice: selectedTicket.price,
+        totalAmount: totalPrice
+      }
+      
+      sessionStorage.setItem('_pendingBooking', JSON.stringify(bookingData))
+      console.log('💾 Booking data stored for confirmation after payment')
+      
+      // Redirect to Hyparrow checkout with return URL
+      const returnUrl = `${window.location.origin}/event/${event.id}/tickets?status=success`
+      const checkoutUrl = `https://checkout.hyparrow.com/pay/${paymentLinkIdentifier}?return_url=${encodeURIComponent(returnUrl)}`
+      window.location.href = checkoutUrl
     } catch (err) {
       console.error('Checkout error:', err)
       setError(err.message || 'An error occurred during checkout')
-      setLoading(false)
-    }
-  }
-
-  const saveBooking = async (paymentResponse) => {
-    try {
-      // Save booking to database - for now just redirect
-      alert(`Payment successful! Booking confirmed for ${formData.email}`)
-      navigate('/dashboard')
-    } catch (err) {
-      console.error('Error saving booking:', err)
-      setError('Payment was successful but booking could not be saved')
-    } finally {
       setLoading(false)
     }
   }
@@ -247,14 +329,13 @@ export default function Ticketing() {
               </div>
             </div>
             
-            {/* Guest Info */}
+            {/* Guest Info - Optional */}
             <div className="space-y-6">
-              <h3 className="text-lg font-headline font-semibold text-on-surface border-b border-outline-variant pb-2">Guest Information</h3>
+              <h3 className="text-lg font-headline font-semibold text-on-surface border-b border-outline-variant pb-2">Guest Information (Optional)</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-body font-semibold text-on-surface mb-2">First Name</label>
                   <input 
-                    required 
                     type="text" 
                     name="firstName"
                     value={formData.firstName}
@@ -266,7 +347,6 @@ export default function Ticketing() {
                 <div>
                   <label className="block text-sm font-body font-semibold text-on-surface mb-2">Last Name</label>
                   <input 
-                    required 
                     type="text" 
                     name="lastName"
                     value={formData.lastName}
@@ -279,7 +359,6 @@ export default function Ticketing() {
               <div>
                 <label className="block text-sm font-body font-semibold text-on-surface mb-2">Email Address</label>
                 <input 
-                  required 
                   type="email" 
                   name="email"
                   value={formData.email}
@@ -291,22 +370,23 @@ export default function Ticketing() {
             </div>
 
             <div className="pt-6 mt-6 border-t border-outline-variant/30 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-2 text-on-surface-variant font-body text-sm w-full md:w-auto">
-                <ShieldCheck size={18} className="text-brand-gold" />
-                Secure 256-bit Encrypted Checkout
+              <div className="text-on-surface-variant font-body text-sm">
+                Total: <span className="text-brand-gold font-semibold text-lg">₦{totalPrice.toLocaleString('en-NG')}</span>
               </div>
               <button 
                 type="submit" 
-                disabled={loading}
+                disabled={loading || !paymentLinkIdentifier}
                 className="btn-gold w-full md:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <Loader size={18} className="animate-spin" />
-                    Processing...
+                    Redirecting...
                   </div>
+                ) : !paymentLinkIdentifier ? (
+                  'Payment Not Available'
                 ) : (
-                  `Pay Now ₦${totalPrice.toLocaleString('en-NG')}`
+                  'Pay Now'
                 )}
               </button>
             </div>

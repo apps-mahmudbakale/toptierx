@@ -139,5 +139,54 @@ export const neonService = {
       console.error('Error deleting event:', error)
       throw error
     }
+  },
+
+  // Booking operations
+  async createBooking(bookingData) {
+    try {
+      const result = await sql`
+        INSERT INTO bookings 
+        (event_id, event_title, customer_name, customer_email, ticket_count, ticket_price, total_amount, status)
+        VALUES (
+          ${bookingData.eventId},
+          ${bookingData.eventTitle},
+          ${bookingData.customerName},
+          ${bookingData.customerEmail},
+          ${bookingData.ticketCount},
+          ${bookingData.ticketPrice},
+          ${bookingData.totalAmount},
+          ${bookingData.status || 'pending'}
+        )
+        RETURNING *
+      `
+      
+      if (result.length === 0) throw new Error('Failed to create booking')
+      
+      console.log('✅ Booking created:', result[0])
+      return result[0]
+    } catch (error) {
+      console.error('Error creating booking:', error)
+      throw error
+    }
+  },
+
+  async getBookings() {
+    try {
+      const result = await sql`SELECT * FROM bookings ORDER BY created_at DESC`
+      return result
+    } catch (error) {
+      console.error('Error fetching bookings:', error)
+      throw error
+    }
+  },
+
+  async getBookingsByEmail(email) {
+    try {
+      const result = await sql`SELECT * FROM bookings WHERE customer_email = ${email} ORDER BY created_at DESC`
+      return result
+    } catch (error) {
+      console.error('Error fetching bookings:', error)
+      throw error
+    }
   }
 }

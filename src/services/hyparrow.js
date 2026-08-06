@@ -78,26 +78,37 @@ export const hyparrowService = {
         throw new Error('Hyparrow public key not configured in .env')
       }
 
-      // Call POST /checkout/pay/{identifier} endpoint
-      const response = await fetch(`https://api.hyparrow.cloud/api/v1/checkout/pay/${data.identifier}`, {
+      // Call backend proxy to avoid CORS issues
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
+      const response = await fetch(`${backendUrl}/api/payment/hyparrow/checkout`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${publicKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          identifier: data.identifier,
           email: data.email,
-          customer_name: data.customerName,
+          customerName: data.customerName,
           metadata: data.metadata || {}
         })
       })
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Failed to initiate payment')
+        throw new Error(error.error || 'Failed to initiate payment')
       }
 
-      return await response.json()
+      const result = await response.json()
+      
+      // If status 204, we need to redirect to checkout
+      if (result.status === 204) {
+        // Show message that payment is being processed
+        console.log('Payment initiated - redirecting to Hyparrow checkout...')
+        // In production, you may need to handle redirect differently
+        // For now, the backend will handle the redirect
+      }
+
+      return result
     } catch (error) {
       console.error('Error initiating Hyparrow payment:', error)
       throw error
