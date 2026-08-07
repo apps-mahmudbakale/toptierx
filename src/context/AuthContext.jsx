@@ -1,12 +1,7 @@
 import { createContext, useState, useCallback, useEffect } from 'react'
+import { sql } from '../services/db'
 
 export const AuthContext = createContext()
-
-// Default admin credentials (in production, use backend auth)
-const DEFAULT_ADMIN = {
-  email: 'admin@toptier.com',
-  password: 'admin123'
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -25,20 +20,49 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }, [])
 
-  const login = useCallback((email, password) => {
-    // For now, using local validation. In production, call backend API
-    if (email === DEFAULT_ADMIN.email && password === DEFAULT_ADMIN.password) {
-      const userData = {
-        id: 'admin-1',
-        email,
-        name: 'Admin',
-        role: 'admin'
+  const login = useCallback(async (email, password) => {
+    try {
+      console.log('🔐 Authenticating user:', email)
+      
+      // Query user from Neon database
+      const result = await sql`
+        SELECT id, email, password, role, created_at 
+        FROM users 
+        WHERE email = ${email}
+      `
+
+      if (result.length === 0) {
+        console.log('❌ User not found:', email)
+        return { success: false, error: 'Invalid email or password' }
       }
+
+      const dbUser = result[0]
+      
+      // Simple password comparison (not ideal for production)
+      // For production, implement backend authentication with proper bcrypt hashing
+      if (password !== dbUser.password) {
+        // Try comparing as plaintext for now
+        console.log('❌ Password mismatch for user:', email)
+        return { success: false, error: 'Invalid email or password' }
+      }
+
+      console.log('✅ User authenticated:', email)
+      
+      const userData = {
+        id: dbUser.id,
+        email: dbUser.email,
+        role: dbUser.role || 'user',
+        createdAt: dbUser.created_at
+      }
+
       setUser(userData)
       localStorage.setItem('toptier_user', JSON.stringify(userData))
+      
       return { success: true, user: userData }
+    } catch (error) {
+      console.error('Login error:', error)
+      return { success: false, error: 'Login failed. Please try again.' }
     }
-    return { success: false, error: 'Invalid email or password' }
   }, [])
 
   const logout = useCallback(() => {

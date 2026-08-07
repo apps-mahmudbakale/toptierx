@@ -1,44 +1,36 @@
-import { createContext, useState, useCallback } from 'react'
+import { createContext, useState, useCallback, useEffect } from 'react'
+import { neonService } from '../services/neonDb'
 
 export const BookingContext = createContext()
 
-const initialBookings = [
-  {
-    id: 'booking-001',
-    eventId: 'gala-obsidian',
-    eventTitle: 'The Obsidian Gala — An Evening of Timeless Elegance',
-    customerName: 'John Doe',
-    customerEmail: 'john@example.com',
-    ticketCount: 2,
-    ticketPrice: 150000,
-    totalAmount: 300000,
-    bookingDate: '2026-08-01',
-    status: 'confirmed',
-    notes: 'VIP seating requested'
-  },
-  {
-    id: 'booking-002',
-    eventId: 'summit-luxe',
-    eventTitle: 'Summit Luxe — Where Visionaries Connect',
-    customerName: 'Jane Smith',
-    customerEmail: 'jane@example.com',
-    ticketCount: 1,
-    ticketPrice: 200000,
-    totalAmount: 200000,
-    bookingDate: '2026-07-29',
-    status: 'confirmed',
-    notes: ''
-  }
-]
-
 export function BookingProvider({ children }) {
-  const [bookings, setBookings] = useState(initialBookings)
+  const [bookings, setBookings] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Load bookings from Neon on mount
+  useEffect(() => {
+    const loadBookings = async () => {
+      try {
+        setLoading(true)
+        const data = await neonService.getBookings()
+        console.log('📊 Bookings loaded from Neon:', data)
+        setBookings(data || [])
+      } catch (error) {
+        console.error('Error loading bookings:', error)
+        setBookings([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadBookings()
+  }, [])
 
   const addBooking = useCallback((booking) => {
     const newBooking = {
       ...booking,
       id: booking.id || `booking-${Date.now()}`,
-      bookingDate: booking.bookingDate || new Date().toISOString().split('T')[0],
+      booking_date: booking.booking_date || new Date().toISOString().split('T')[0],
       status: booking.status || 'confirmed'
     }
     setBookings([...bookings, newBooking])
@@ -54,14 +46,14 @@ export function BookingProvider({ children }) {
   }, [bookings])
 
   const getBookingsByEventId = useCallback((eventId) => {
-    return bookings.filter(b => b.eventId === eventId)
+    return bookings.filter(b => b.event_id === parseInt(eventId) || b.eventId === eventId)
   }, [bookings])
 
   const getBookingStats = useCallback((eventId) => {
     const eventBookings = eventId ? getBookingsByEventId(eventId) : bookings
     const totalBookings = eventBookings.length
-    const totalTickets = eventBookings.reduce((acc, b) => acc + (b.ticketCount || 0), 0)
-    const totalRevenue = eventBookings.reduce((acc, b) => acc + (b.totalAmount || 0), 0)
+    const totalTickets = eventBookings.reduce((acc, b) => acc + (b.ticket_count || b.ticketCount || 0), 0)
+    const totalRevenue = eventBookings.reduce((acc, b) => acc + (b.total_amount || b.totalAmount || 0), 0)
     const confirmedBookings = eventBookings.filter(b => b.status === 'confirmed').length
     
     return {
@@ -76,6 +68,7 @@ export function BookingProvider({ children }) {
   return (
     <BookingContext.Provider value={{
       bookings,
+      loading,
       addBooking,
       updateBooking,
       deleteBooking,

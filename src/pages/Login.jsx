@@ -62,7 +62,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@toptier.com"
+                  placeholder="admin@toptierxperienze.com"
                   className="w-full pl-10 pr-4 py-2.5 border border-outline-variant rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-brand-gold bg-surface/50"
                   required
                 />
@@ -87,10 +87,10 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Demo Credentials */}
+            {/* Demo Credentials - Now from Neon Database */}
             <div className="bg-brand-gold/10 p-3 rounded-lg border border-brand-gold/20">
-              <p className="text-xs font-body text-on-surface-variant mb-1">Demo Credentials:</p>
-              <p className="text-xs font-semibold text-on-surface">admin@toptier.com / admin123</p>
+              <p className="text-xs font-body text-on-surface-variant mb-1">Demo Credentials (from Neon DB):</p>
+              <p className="text-xs font-semibold text-on-surface">admin@toptierxperienze.com / Admin@123</p>
             </div>
 
             {/* Submit */}
@@ -105,7 +105,7 @@ export default function Login() {
 
           {/* Footer */}
           <p className="text-center text-xs text-on-surface-variant font-body">
-            This is a demo login. In production, integrate with your backend.
+            Authenticating with Neon database
           </p>
         </div>
       </div>
