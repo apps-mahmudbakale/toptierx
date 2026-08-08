@@ -54,22 +54,15 @@ export default function Ticketing() {
 
       const booking = JSON.parse(storedBooking)
       
-      // Save booking to database
-      const result = await neonService.createBooking({
-        eventId: booking.eventId,
-        eventTitle: booking.eventTitle,
-        customerName: booking.customerName,
-        customerEmail: booking.customerEmail,
-        customerPhone: booking.customerPhone,
-        ticketCount: booking.ticketCount,
-        ticketPrice: booking.ticketPrice,
-        totalAmount: booking.totalAmount,
+      // Update booking status from pending to confirmed
+      const result = await neonService.updateBooking(booking.bookingId, {
         status: 'confirmed',
         paymentReference: paymentReference
       })
 
-      console.log('✅ Booking saved to database:', result)
-      console.log('✅ Invoice already created:', booking.invoiceId)
+      console.log('✅ Booking confirmed:', result)
+      console.log('📌 Invoice ID:', booking.invoiceId)
+      console.log('📌 Payment Reference:', paymentReference)
       
       setBookingData(result)
       setPaymentSuccess(true)
@@ -77,8 +70,8 @@ export default function Ticketing() {
       // Clear stored data
       sessionStorage.removeItem('_pendingBooking')
     } catch (err) {
-      console.error('Error saving booking:', err)
-      setError('Booking could not be saved. Please contact support.')
+      console.error('Error confirming booking:', err)
+      setError('Booking could not be confirmed. Please contact support.')
     } finally {
       setLoading(false)
     }
@@ -219,14 +212,32 @@ export default function Ticketing() {
 
       console.log('✅ Invoice created with ID:', invoiceResult.invoiceId)
       
-      // Step 2: Store both booking and invoice data for after payment
+      // Step 1.5: Save pending booking to database immediately
+      console.log('💾 Saving pending booking to database...')
+      const bookingResult = await neonService.createBooking({
+        eventId: bookingDataToCreate.eventId,
+        eventTitle: bookingDataToCreate.eventTitle,
+        customerName: bookingDataToCreate.customerName,
+        customerEmail: bookingDataToCreate.customerEmail,
+        customerPhone: bookingDataToCreate.customerPhone,
+        ticketCount: bookingDataToCreate.ticketCount,
+        ticketPrice: bookingDataToCreate.ticketPrice,
+        totalAmount: bookingDataToCreate.totalAmount,
+        invoiceId: invoiceResult.invoiceId,
+        status: 'pending'
+      })
+
+      console.log('✅ Pending booking saved:', bookingResult)
+      
+      // Step 2: Store booking and invoice data for after payment
       const completeData = {
         ...bookingDataToCreate,
-        invoiceId: invoiceResult.invoiceId
+        invoiceId: invoiceResult.invoiceId,
+        bookingId: bookingResult.id
       }
       
       sessionStorage.setItem('_pendingBooking', JSON.stringify(completeData))
-      console.log('💾 Invoice and booking data stored for confirmation after payment')
+      console.log('💾 Data stored for confirmation after payment')
       
       // Step 3: Redirect to Hyparrow invoice checkout
       if (invoiceResult.checkoutUrl) {

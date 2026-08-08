@@ -150,7 +150,7 @@ export const neonService = {
     try {
       const result = await sql`
         INSERT INTO bookings 
-        (event_id, event_title, customer_name, customer_email, customer_phone, ticket_count, ticket_price, total_amount, status)
+        (event_id, event_title, customer_name, customer_email, customer_phone, ticket_count, ticket_price, total_amount, invoice_id, status)
         VALUES (
           ${bookingData.eventId},
           ${bookingData.eventTitle},
@@ -160,6 +160,7 @@ export const neonService = {
           ${bookingData.ticketCount},
           ${bookingData.ticketPrice},
           ${bookingData.totalAmount},
+          ${bookingData.invoiceId || null},
           ${bookingData.status || 'pending'}
         )
         RETURNING *
@@ -191,6 +192,27 @@ export const neonService = {
       return result
     } catch (error) {
       console.error('Error fetching bookings:', error)
+      throw error
+    }
+  },
+
+  async updateBooking(id, bookingData) {
+    try {
+      const result = await sql`
+        UPDATE bookings 
+        SET 
+          status = ${bookingData.status || 'pending'},
+          payment_reference = ${bookingData.paymentReference || null}
+        WHERE id = ${id}
+        RETURNING *
+      `
+      
+      if (result.length === 0) throw new Error('Booking not found')
+      
+      console.log('✅ Booking updated:', result[0])
+      return result[0]
+    } catch (error) {
+      console.error('Error updating booking:', error)
       throw error
     }
   },
