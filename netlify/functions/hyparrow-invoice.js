@@ -80,14 +80,32 @@ export default async (req, context) => {
       }
 
       const result = await response.json()
-      console.log('✅ Hyparrow invoice created:', JSON.stringify(result, null, 2))
+      console.log('✅ Hyparrow invoice raw response:', result)
+      console.log('📋 Response type:', typeof result)
+      console.log('📋 Response keys:', Object.keys(result))
+      console.log('📋 Full response:', JSON.stringify(result, null, 2))
+      console.log('📋 Response keys:', Object.keys(result))
+      console.log('📋 Full response object:', result)
 
-      // Extract invoice ID from response
-      const invoiceId = result.id || result.invoice_id || result._id
+      // Extract invoice ID from response - try multiple possible fields
+      let invoiceId = result.id || result.invoice_id || result._id || result.data?.id
+      
+      // If still not found, log all keys for debugging
+      if (!invoiceId) {
+        console.error('❌ Could not find invoice ID in response')
+        console.error('📋 Available keys:', Object.keys(result))
+        console.error('📋 Full response:', JSON.stringify(result, null, 2))
+        
+        // Try to extract from nested structures
+        if (result.data && typeof result.data === 'object') {
+          console.log('📋 Data keys:', Object.keys(result.data))
+          invoiceId = result.data.id || result.data.invoice_id
+        }
+      }
       
       if (!invoiceId) {
         console.error('❌ No invoice ID in response:', result)
-        throw new Error('Hyparrow API returned invoice but no ID field')
+        throw new Error('Hyparrow API returned invoice but no ID field. Response: ' + JSON.stringify(result))
       }
 
       console.log('📌 Invoice ID extracted:', invoiceId)
