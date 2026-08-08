@@ -222,17 +222,14 @@ export default function Ticketing() {
       sessionStorage.setItem('_pendingBooking', JSON.stringify(completeData))
       console.log('💾 Invoice and booking data stored for confirmation after payment')
       
-      // Step 3: Redirect to Hyparrow invoice checkout (instead of product link)
+      // Step 3: Redirect to Hyparrow invoice checkout
       if (invoiceResult.invoiceUrl) {
-        // Use invoice checkout URL if available
+        // Use invoice checkout URL
         console.log('🔄 Redirecting to invoice payment...')
         window.location.href = invoiceResult.invoiceUrl
       } else {
-        // Fallback to payment link if no invoice URL
-        const returnUrl = `${window.location.origin}/event/${event.id}/tickets?status=success`
-        const checkoutUrl = `https://checkout.hyparrow.com/pay/${event.paymentLinkIdentifier}?return_url=${encodeURIComponent(returnUrl)}`
-        console.log('🔄 Redirecting to product payment (fallback)...')
-        window.location.href = checkoutUrl
+        // If no invoice URL in local dev, show error
+        throw new Error('Unable to proceed to payment. Please try again.')
       }
     } catch (err) {
       console.error('Checkout error:', err)
