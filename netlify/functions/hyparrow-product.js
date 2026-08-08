@@ -27,11 +27,9 @@ export default async (req, context) => {
     let response
 
     if (action === 'create') {
-      // Create or update product - start with minimal fields
-      // Add timestamp to name to ensure uniqueness (avoids duplicate slug errors)
-      const timestamp = Date.now()
+      // Create or update product
       const productData = {
-        name: `${eventData.title} (${timestamp})`,
+        name: `${eventData.title}`,
         type: 'physical',
         price: eventData.ticketPrice ? String(eventData.ticketPrice) : '0',
         currency: 'NGN'
@@ -69,31 +67,19 @@ export default async (req, context) => {
           }))
       }
 
-      console.log('🛍️ Creating or updating Hyparrow product:', JSON.stringify(productData, null, 2))
+      console.log('🛍️ Product operation:', JSON.stringify(productData, null, 2))
 
-      // Check if product already exists (by SKU)
+      // Check if we have an existing product ID to update
+      const hyparrowProductId = eventData.hyparrowProductId
+      console.log('📦 Existing product ID:', hyparrowProductId)
+
       let response
-      let existingProductId = null
 
-      if (eventData.id) {
-        // Try to find existing product by SKU
-        try {
-          // Search for existing product - note: Hyparrow may not have a search endpoint
-          // So we'll use the stored hyparrow_product_id from database if available
-          if (eventData.hyparrowProductId) {
-            existingProductId = eventData.hyparrowProductId
-            console.log('📦 Found existing product ID:', existingProductId)
-          }
-        } catch (err) {
-          console.log('⚠️ Could not search for existing product, will create new one')
-        }
-      }
-
-      if (existingProductId) {
+      if (hyparrowProductId && hyparrowProductId !== 'LOCAL' && !hyparrowProductId.startsWith('LOCAL-')) {
         // Update existing product
-        console.log('📝 Updating existing product:', existingProductId)
+        console.log('📝 Updating existing product:', hyparrowProductId)
         
-        response = await fetch(`https://api.hyparrow.cloud/api/v1/products/${existingProductId}`, {
+        response = await fetch(`https://api.hyparrow.cloud/api/v1/products/${hyparrowProductId}`, {
           method: 'PUT',
           headers: {
             'X-API-Key': publicKey,
@@ -108,8 +94,7 @@ export default async (req, context) => {
           console.error('❌ Hyparrow product update error:', {
             status: response.status,
             statusText: response.statusText,
-            body: errorText,
-            requestData: productData
+            body: errorText
           })
           throw new Error(`Hyparrow API error ${response.status}: ${errorText}`)
         }
@@ -121,13 +106,16 @@ export default async (req, context) => {
           JSON.stringify({
             success: true,
             product: result,
-            productId: result.id || result.product_id,
+            productId: result.id || result.product_id || hyparrowProductId,
             action: 'updated'
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       } else {
-        // Create new product
+        // Create new product - add timestamp to name to ensure uniqueness
+        const timestamp = Date.now()
+        productData.name = `${eventData.title} (${timestamp})`
+        
         console.log('✨ Creating new product')
         
         response = await fetch('https://api.hyparrow.cloud/api/v1/products/', {
@@ -145,8 +133,7 @@ export default async (req, context) => {
           console.error('❌ Hyparrow product creation error:', {
             status: response.status,
             statusText: response.statusText,
-            body: errorText,
-            requestData: productData
+            body: errorText
           })
           throw new Error(`Hyparrow API error ${response.status}: ${errorText}`)
         }

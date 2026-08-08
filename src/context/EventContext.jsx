@@ -35,14 +35,20 @@ export function EventProvider({ children }) {
       console.log('🛍️ Creating Hyparrow product for event...')
       const productResult = await hyparrowProductService.createProduct(event)
       
+      console.log('📊 Product result:', productResult)
+      
       // Add Hyparrow product ID to event data
       const eventWithProduct = {
         ...event,
-        hyparrowProductId: productResult.productId || null
+        hyparrowProductId: productResult.success ? (productResult.productId || null) : null
       }
+      
+      console.log('💾 Saving event with product ID:', eventWithProduct.hyparrowProductId)
 
       // Then create event in Neon
       const newEvent = await neonService.createEvent(eventWithProduct)
+      console.log('✅ Event saved to database:', newEvent)
+      
       setEvents(prev => [newEvent, ...prev])
       
       console.log(`✅ Event and Hyparrow product ${productResult.action === 'updated' ? 'updated' : 'created'} successfully`)
@@ -58,6 +64,7 @@ export function EventProvider({ children }) {
     try {
       // Get the existing event to check if it has a product ID
       const existingEvent = events.find(e => e.id === id)
+      console.log('📋 Existing event:', { id, hyparrowProductId: existingEvent?.hyparrowProductId })
       
       let eventWithProduct = updatedEvent
 
@@ -68,19 +75,33 @@ export function EventProvider({ children }) {
         hyparrowProductId: existingEvent?.hyparrowProductId || null
       })
       
-      if (productResult.action === 'updated') {
-        console.log('✅ Hyparrow product updated')
+      console.log('📊 Product result:', productResult)
+      
+      if (productResult.success) {
+        if (productResult.action === 'updated') {
+          console.log('✅ Hyparrow product updated:', productResult.productId)
+        } else {
+          console.log('✅ Hyparrow product created for existing event:', productResult.productId)
+        }
+        
+        eventWithProduct = {
+          ...updatedEvent,
+          hyparrowProductId: productResult.productId
+        }
       } else {
-        console.log('✅ Hyparrow product created for existing event')
+        console.warn('⚠️ Product creation failed, keeping existing ID')
+        eventWithProduct = {
+          ...updatedEvent,
+          hyparrowProductId: existingEvent?.hyparrowProductId || null
+        }
       }
       
-      eventWithProduct = {
-        ...updatedEvent,
-        hyparrowProductId: productResult.productId || existingEvent?.hyparrowProductId
-      }
+      console.log('💾 Saving event with product ID:', eventWithProduct.hyparrowProductId)
 
       // Update event in Neon
       const updated = await neonService.updateEvent(id, eventWithProduct)
+      console.log('✅ Event saved to database:', updated)
+      
       setEvents(prev => prev.map(e => e.id === id ? updated : e))
       return updated
     } catch (err) {
