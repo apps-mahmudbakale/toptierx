@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AuthContext } from '../../context/AuthContext'
 import { LogOut, Menu, X, Home } from 'lucide-react'
 import { useState } from 'react'
+import logoImage from '../../image.png'
 
 export default function DashboardNavbar() {
   const { user, logout } = useContext(AuthContext)
@@ -19,9 +20,7 @@ export default function DashboardNavbar() {
       <div className="container-max flex items-center justify-between h-20">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <span className="font-headline font-bold text-xl text-on-surface">
-            TopTier<span className="text-brand-gold">.</span>
-          </span>
+          <img src={logoImage} alt="TopTier" className="h-10 w-auto" />
         </Link>
 
         {/* Desktop Nav */}

@@ -87,7 +87,7 @@ export function EventProvider({ children }) {
         
         eventWithProduct = {
           ...updatedEvent,
-          hyparrowProductId: productResult.productId
+          hyparrowProductId: productResult.product.data.id
         }
       } else {
         console.warn('⚠️ Product creation failed, keeping existing ID')
