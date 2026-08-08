@@ -27,32 +27,49 @@ export default async (req, context) => {
     let response
 
     if (action === 'create') {
-      // Create product
+      // Create product - start with minimal fields
+      // Add timestamp to name to ensure uniqueness (avoids duplicate slug errors)
+      const timestamp = Date.now()
       const productData = {
-        name: eventData.title,
-        description: eventData.description || `Event: ${eventData.title}`,
-        type: 'digital',
-        price: String(eventData.ticketPrice || 0),
-        currency: 'NGN',
-        stock: parseInt(eventData.capacity) || 0,
-        sku: `EVENT-${eventData.id || Date.now()}`,
-        category: eventData.category || 'Events',
-        isActive: true,
-        fileUrl: eventData.image || '',
-        variants: []
+        name: `${eventData.title} (${timestamp})`,
+        type: 'physical',
+        price: eventData.ticketPrice ? String(eventData.ticketPrice) : '0',
+        currency: 'NGN'
       }
 
-      // Add ticket category variants if available
-      if (eventData.ticketCategories && eventData.ticketCategories.length > 0) {
-        productData.variants = eventData.ticketCategories.map((category) => ({
-          name: category.name,
-          sku: `${productData.sku}-${category.name.toUpperCase().replace(/\s+/g, '-')}`,
-          price: String(category.price || 0),
-          stockQty: parseInt(eventData.capacity) || 0
-        }))
+      // Add optional fields
+      if (eventData.description) {
+        productData.description = eventData.description
+      }
+      if (eventData.capacity) {
+        productData.stock = parseInt(eventData.capacity)
+      }
+      if (eventData.category) {
+        productData.category = eventData.category
+      }
+      if (eventData.image) {
+        productData.fileUrl = eventData.image
+      }
+      
+      productData.isActive = true
+
+      // Only add SKU if we have an ID
+      if (eventData.id) {
+        productData.sku = `EVENT-${eventData.id}`
       }
 
-      console.log('🛍️ Creating Hyparrow product:', productData)
+      // Only add variants if they exist and are valid
+      if (Array.isArray(eventData.ticketCategories) && eventData.ticketCategories.length > 0) {
+        productData.variants = eventData.ticketCategories
+          .filter(cat => cat.name && cat.price)
+          .map((category) => ({
+            name: category.name,
+            price: String(category.price),
+            ...(eventData.capacity && { stockQty: parseInt(eventData.capacity) })
+          }))
+      }
+
+      console.log('🛍️ Creating Hyparrow product:', JSON.stringify(productData, null, 2))
 
       response = await fetch('https://api.hyparrow.cloud/api/v1/products/', {
         method: 'POST',
@@ -68,9 +85,11 @@ export default async (req, context) => {
         const errorText = await response.text()
         console.error('❌ Hyparrow product creation error:', {
           status: response.status,
-          body: errorText
+          statusText: response.statusText,
+          body: errorText,
+          requestData: productData
         })
-        throw new Error(`Failed to create product: ${response.status}`)
+        throw new Error(`Hyparrow API error ${response.status}: ${errorText}`)
       }
 
       const result = await response.json()
