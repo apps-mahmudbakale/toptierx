@@ -191,7 +191,7 @@ export default function Ticketing() {
         ticketCount: quantity,
         ticketPrice: selectedTicket.price,
         totalAmount: selectedTicket.price * quantity
-        
+
       }
       
       // Step 1: Create invoice in Hyparrow BEFORE payment
@@ -205,11 +205,19 @@ export default function Ticketing() {
         total_amount: bookingDataToCreate.totalAmount
       })
 
+      console.log('📊 Invoice result:', invoiceResult)
+
       if (!invoiceResult.success) {
+        console.error('❌ Invoice creation failed:', invoiceResult.error)
         throw new Error(invoiceResult.error || 'Failed to create invoice')
       }
 
-      console.log('✅ Invoice created:', invoiceResult.invoiceId)
+      if (!invoiceResult.invoiceId) {
+        console.error('❌ No invoice ID returned')
+        throw new Error('Invoice created but no ID returned')
+      }
+
+      console.log('✅ Invoice created:', invoiceResult)
       
       // Step 2: Store both booking and invoice data for after payment
       const completeData = {
