@@ -193,5 +193,60 @@ export const neonService = {
       console.error('Error fetching bookings:', error)
       throw error
     }
+  },
+
+  async logWebhook(webhookData) {
+    try {
+      const result = await sql`
+        INSERT INTO webhook_logs 
+        (webhook_event, event_type, invoice_id, status, payload, signature_valid, response_status)
+        VALUES (
+          ${webhookData.webhookEvent || 'unknown'},
+          ${webhookData.eventType || null},
+          ${webhookData.invoiceId || null},
+          ${webhookData.status || 'received'},
+          ${JSON.stringify(webhookData.payload || {})},
+          ${webhookData.signatureValid || false},
+          ${webhookData.responseStatus || 200}
+        )
+        RETURNING *
+      `
+      
+      if (result.length === 0) throw new Error('Failed to log webhook')
+      
+      console.log('✅ Webhook logged:', result[0])
+      return result[0]
+    } catch (error) {
+      console.error('Error logging webhook:', error)
+      throw error
+    }
+  },
+
+  async getWebhookLogs(limit = 50) {
+    try {
+      const result = await sql`
+        SELECT * FROM webhook_logs 
+        ORDER BY created_at DESC 
+        LIMIT ${limit}
+      `
+      return result
+    } catch (error) {
+      console.error('Error fetching webhook logs:', error)
+      throw error
+    }
+  },
+
+  async getWebhookLogsByInvoiceId(invoiceId) {
+    try {
+      const result = await sql`
+        SELECT * FROM webhook_logs 
+        WHERE invoice_id = ${invoiceId}
+        ORDER BY created_at DESC
+      `
+      return result
+    } catch (error) {
+      console.error('Error fetching webhook logs:', error)
+      throw error
+    }
   }
 }

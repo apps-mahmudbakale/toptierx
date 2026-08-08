@@ -191,6 +191,7 @@ export default function Ticketing() {
         ticketCount: quantity,
         ticketPrice: selectedTicket.price,
         totalAmount: selectedTicket.price * quantity
+        
       }
       
       // Step 1: Create invoice in Hyparrow BEFORE payment
@@ -220,12 +221,12 @@ export default function Ticketing() {
       console.log('💾 Invoice and booking data stored for confirmation after payment')
       
       // Step 3: Redirect to Hyparrow invoice checkout
-      if (invoiceResult.invoiceUrl) {
+      if (invoiceResult.checkoutUrl) {
         // Use invoice checkout URL
-        console.log('🔄 Redirecting to invoice payment...')
-        window.location.href = invoiceResult.invoiceUrl
+        console.log('🔄 Redirecting to invoice payment:', invoiceResult.checkoutUrl)
+        window.location.href = invoiceResult.checkoutUrl
       } else {
-        // If no invoice URL in local dev, show error
+        // If no checkout URL in local dev, show error
         throw new Error('Unable to proceed to payment. Please try again.')
       }
     } catch (err) {

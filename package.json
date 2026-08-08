@@ -13,6 +13,7 @@
     "seed:users": "node seed-users.js",
     "migrate:add-product-id": "node run-add-product-id.js",
     "migrate:add-phone": "node run-add-phone.js",
+    "migrate:add-webhook-logs": "node run-add-webhook-logs.js",
     "sync:events": "node sync-existing-events.js"
   },
   "keywords": [],

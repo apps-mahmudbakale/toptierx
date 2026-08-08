@@ -36,7 +36,7 @@ export default async (req, context) => {
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
           .toISOString()
           .split('T')[0], // 7 days from now
-        tax_direction: 'customer',
+        tax_direction: 'merchant',
         taxType: 'percentage',
         taxRate: 0, // No tax by default
         checkoutCallbackUrl: `${process.env.URL || 'https://toptierxperienz.com'}/.netlify/functions/hyparrow-webhook`,
@@ -87,7 +87,7 @@ export default async (req, context) => {
           success: true,
           invoice: result,
           invoiceId: result.id || result.invoice_id,
-          invoiceUrl: result.checkoutUrl || result.invoice_url
+          checkoutUrl: `https://checkout.hyparrow.com/pay/${result.id || result.invoice_id}`
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       )

@@ -19,10 +19,11 @@ export const hyparrowInvoiceService = {
       // In local dev, functions aren't available, so skip invoice creation
       if (isDev) {
         console.warn('⚠️ Skipping invoice creation in local dev (Netlify Functions not available locally)')
+        const mockId = `LOCAL-${Date.now()}`
         return {
           success: true,
-          invoiceId: `LOCAL-${Date.now()}`,
-          invoiceUrl: null,
+          invoiceId: mockId,
+          checkoutUrl: `https://checkout.hyparrow.com/pay/${mockId}`,
           message: 'Invoice creation skipped in local dev'
         }
       }
@@ -52,7 +53,7 @@ export const hyparrowInvoiceService = {
         success: true,
         invoice: result.invoice,
         invoiceId: result.invoiceId,
-        invoiceUrl: result.invoiceUrl
+        checkoutUrl: result.checkoutUrl
       }
     } catch (error) {
       console.error('Error creating Hyparrow invoice:', error)
