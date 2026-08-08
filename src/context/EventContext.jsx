@@ -75,7 +75,7 @@ export function EventProvider({ children }) {
         hyparrowProductId: existingEvent?.hyparrowProductId || null
       })
       
-      console.log('📊 Product result:', productResult)
+      // console.log('📊 Product result:', productResult)
       console.log('Product ID: ', productResult.product.id);
       
       if (productResult.success) {
