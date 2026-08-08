@@ -12,6 +12,19 @@ export const hyparrowProductService = {
     try {
       console.log('🛍️ Creating Hyparrow product for event:', eventData.title)
 
+      // Determine if we're in production (deployed) or local dev
+      const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      
+      // In local dev, functions aren't available, so skip product creation
+      if (isDev) {
+        console.warn('⚠️ Skipping product creation in local dev (Netlify Functions not available locally)')
+        return {
+          success: true,
+          productId: `LOCAL-${Date.now()}`,
+          message: 'Product creation skipped in local dev'
+        }
+      }
+
       // Call Netlify function instead of Hyparrow API directly (avoids CORS)
       const response = await fetch('/.netlify/functions/hyparrow-product', {
         method: 'POST',

@@ -12,6 +12,7 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
     "seed:users": "node seed-users.js",
     "migrate:add-product-id": "node run-add-product-id.js",
+    "migrate:add-phone": "node run-add-phone.js",
     "sync:events": "node sync-existing-events.js"
   },
   "keywords": [],

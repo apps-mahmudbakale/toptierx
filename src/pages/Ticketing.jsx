@@ -4,6 +4,7 @@ import { EventContext } from '../context/EventContext'
 import { ArrowLeft, Check, Loader } from 'lucide-react'
 import SectionLabel from '../components/ui/SectionLabel'
 import { neonService } from '../services/neonDb'
+import { hyparrowInvoiceService } from '../services/hyparrowInvoice'
 
 export default function Ticketing() {
   const { id } = useParams()
@@ -16,12 +17,14 @@ export default function Ticketing() {
   const [error, setError] = useState(null)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
   const [bookingData, setBookingData] = useState(null)
+  const [invoiceCheckoutUrl, setInvoiceCheckoutUrl] = useState(null)
   
   // Form state
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: ''
+    email: '',
+    phone: ''
   })
 
   // Check for payment success on mount (return from Hyparrow)
@@ -57,6 +60,7 @@ export default function Ticketing() {
         eventTitle: booking.eventTitle,
         customerName: booking.customerName,
         customerEmail: booking.customerEmail,
+        customerPhone: booking.customerPhone,
         ticketCount: booking.ticketCount,
         ticketPrice: booking.ticketPrice,
         totalAmount: booking.totalAmount,
@@ -65,6 +69,8 @@ export default function Ticketing() {
       })
 
       console.log('✅ Booking saved to database:', result)
+      console.log('✅ Invoice already created:', booking.invoiceId)
+      
       setBookingData(result)
       setPaymentSuccess(true)
       
@@ -164,7 +170,7 @@ export default function Ticketing() {
     e.preventDefault()
     
     // Validate form
-    if (!formData.firstName || !formData.lastName || !formData.email) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
       setError('Please fill in all guest information')
       return
     }
@@ -174,36 +180,63 @@ export default function Ticketing() {
       return
     }
 
-    if (!paymentLinkIdentifier) {
-      setError('Payment is not configured for this event')
-      return
-    }
-
     setLoading(true)
     setError(null)
 
     try {
-      // Store booking data for after payment confirmation
-      const bookingData = {
+      // Prepare booking data
+      const bookingDataToCreate = {
         eventId: event.id,
         eventTitle: event.title,
         customerName: `${formData.firstName} ${formData.lastName}`,
         customerEmail: formData.email,
+        customerPhone: formData.phone,
         ticketCount: quantity,
         ticketPrice: selectedTicket.price,
-        totalAmount: totalPrice
+        totalAmount: selectedTicket.price * quantity
       }
       
-      sessionStorage.setItem('_pendingBooking', JSON.stringify(bookingData))
-      console.log('💾 Booking data stored for confirmation after payment')
+      // Step 1: Create invoice in Hyparrow BEFORE payment
+      console.log('📄 Creating invoice before payment...')
+      const invoiceResult = await hyparrowInvoiceService.createInvoice({
+        event_title: bookingDataToCreate.eventTitle,
+        customer_name: bookingDataToCreate.customerName,
+        customer_email: bookingDataToCreate.customerEmail,
+        ticket_count: bookingDataToCreate.ticketCount,
+        ticket_price: bookingDataToCreate.ticketPrice,
+        total_amount: bookingDataToCreate.totalAmount
+      })
+
+      if (!invoiceResult.success) {
+        throw new Error(invoiceResult.error || 'Failed to create invoice')
+      }
+
+      console.log('✅ Invoice created:', invoiceResult.invoiceId)
       
-      // Redirect to Hyparrow checkout with return URL
-      const returnUrl = `${window.location.origin}/event/${event.id}/tickets?status=success`
-      const checkoutUrl = `https://checkout.hyparrow.com/pay/${paymentLinkIdentifier}?return_url=${encodeURIComponent(returnUrl)}`
-      window.location.href = checkoutUrl
+      // Step 2: Store both booking and invoice data for after payment
+      const completeData = {
+        ...bookingDataToCreate,
+        invoiceId: invoiceResult.invoiceId
+      }
+      
+      sessionStorage.setItem('_pendingBooking', JSON.stringify(completeData))
+      console.log('💾 Invoice and booking data stored for confirmation after payment')
+      
+      // Step 3: Redirect to Hyparrow invoice checkout (instead of product link)
+      if (invoiceResult.invoiceUrl) {
+        // Use invoice checkout URL if available
+        console.log('🔄 Redirecting to invoice payment...')
+        window.location.href = invoiceResult.invoiceUrl
+      } else {
+        // Fallback to payment link if no invoice URL
+        const returnUrl = `${window.location.origin}/event/${event.id}/tickets?status=success`
+        const checkoutUrl = `https://checkout.hyparrow.com/pay/${event.paymentLinkIdentifier}?return_url=${encodeURIComponent(returnUrl)}`
+        console.log('🔄 Redirecting to product payment (fallback)...')
+        window.location.href = checkoutUrl
+      }
     } catch (err) {
       console.error('Checkout error:', err)
-      setError(err.message || 'An error occurred during checkout')
+      setError(err.message || 'Failed to prepare checkout. Please try again.')
       setLoading(false)
     }
   }
@@ -367,6 +400,17 @@ export default function Ticketing() {
                   placeholder="john@example.com" 
                 />
               </div>
+              <div>
+                <label className="block text-sm font-body font-semibold text-on-surface mb-2">Phone Number</label>
+                <input 
+                  type="tel" 
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className="w-full bg-transparent border-b border-outline-variant py-2 font-body focus:outline-none focus:border-brand-gold transition-colors" 
+                  placeholder="09032960659" 
+                />
+              </div>
             </div>
 
             <div className="pt-6 mt-6 border-t border-outline-variant/30 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -375,16 +419,14 @@ export default function Ticketing() {
               </div>
               <button 
                 type="submit" 
-                disabled={loading || !paymentLinkIdentifier}
+                disabled={loading}
                 className="btn-gold w-full md:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <Loader size={18} className="animate-spin" />
-                    Redirecting...
+                    Preparing Payment...
                   </div>
-                ) : !paymentLinkIdentifier ? (
-                  'Payment Not Available'
                 ) : (
                   'Pay Now'
                 )}

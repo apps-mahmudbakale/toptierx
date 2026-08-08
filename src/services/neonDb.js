@@ -150,12 +150,13 @@ export const neonService = {
     try {
       const result = await sql`
         INSERT INTO bookings 
-        (event_id, event_title, customer_name, customer_email, ticket_count, ticket_price, total_amount, status)
+        (event_id, event_title, customer_name, customer_email, customer_phone, ticket_count, ticket_price, total_amount, status)
         VALUES (
           ${bookingData.eventId},
           ${bookingData.eventTitle},
           ${bookingData.customerName},
           ${bookingData.customerEmail},
+          ${bookingData.customerPhone || null},
           ${bookingData.ticketCount},
           ${bookingData.ticketPrice},
           ${bookingData.totalAmount},
