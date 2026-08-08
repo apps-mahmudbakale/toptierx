@@ -76,7 +76,7 @@ export function EventProvider({ children }) {
       })
       
       // console.log('📊 Product result:', productResult)
-      console.log('Product ID: ', productResult.product.id);
+      console.log('Product ID: ', productResult.product.data.id);
       
       if (productResult.success) {
         if (productResult.action === 'updated') {
