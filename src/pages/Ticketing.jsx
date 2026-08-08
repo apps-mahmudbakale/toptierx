@@ -46,32 +46,21 @@ export default function Ticketing() {
       
       // Get stored booking data from sessionStorage
       const storedBooking = sessionStorage.getItem('_pendingBooking')
-      if (!storedBooking) {
-        setError('Booking data not found')
-        setLoading(false)
-        return
+      if (storedBooking) {
+        const booking = JSON.parse(storedBooking)
+        console.log('✅ Payment success for booking:', booking.bookingId)
+        console.log('📌 Invoice ID:', booking.invoiceId)
+        console.log('📌 Payment Reference:', paymentReference)
       }
-
-      const booking = JSON.parse(storedBooking)
       
-      // Update booking status from pending to confirmed
-      const result = await neonService.updateBooking(booking.bookingId, {
-        status: 'confirmed',
-        paymentReference: paymentReference
-      })
-
-      console.log('✅ Booking confirmed:', result)
-      console.log('📌 Invoice ID:', booking.invoiceId)
-      console.log('📌 Payment Reference:', paymentReference)
-      
-      setBookingData(result)
+      setBookingData({ confirmed: true })
       setPaymentSuccess(true)
       
       // Clear stored data
       sessionStorage.removeItem('_pendingBooking')
     } catch (err) {
-      console.error('Error confirming booking:', err)
-      setError('Booking could not be confirmed. Please contact support.')
+      console.error('Error processing payment success:', err)
+      setError('Payment was successful but booking confirmation failed. Please check your email.')
     } finally {
       setLoading(false)
     }

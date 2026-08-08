@@ -32,11 +32,12 @@ export const handler = async (event) => {
     console.log('🔄 Webhook redirect from Hyparrow (GET request)')
     console.log('📊 Query params:', event.queryStringParameters)
     
-    // Hyparrow redirects with query params like: ?status=success&reference=XXX
+    // Hyparrow redirects with query params like: ?status=success&reference=XXX&invoiceId=YYY
     const { status, reference, invoiceId } = event.queryStringParameters || {}
     
     console.log('✅ Payment status:', status)
     console.log('📌 Payment reference:', reference)
+    console.log('📌 Invoice ID:', invoiceId)
     
     // Log the redirect
     await logWebhook(
@@ -48,11 +49,86 @@ export const handler = async (event) => {
       true
     )
     
+    // If payment was successful, fetch invoice details and save booking
+    if (status === 'success' || status === 'completed') {
+      try {
+        console.log('📄 Fetching invoice details from Hyparrow for ID:', invoiceId)
+        
+        // Fetch invoice from Hyparrow
+        const invoiceResponse = await fetch(
+          `https://api.hyparrow.cloud/api/v1/invoices/${invoiceId}`,
+          {
+            method: 'GET',
+            headers: {
+              'X-API-Key': process.env.VITE_HYPARROW_PUBLIC_KEY,
+              'X-API-Secret': process.env.VITE_HYPARROW_SECRET_KEY
+            }
+          }
+        )
+
+        if (!invoiceResponse.ok) {
+          console.error('❌ Failed to fetch invoice:', invoiceResponse.status)
+          throw new Error(`Failed to fetch invoice: ${invoiceResponse.status}`)
+        }
+
+        const invoiceData = await invoiceResponse.json()
+        console.log('✅ Invoice details received:', JSON.stringify(invoiceData, null, 2))
+
+        // Extract customer details from invoice
+        const customerName = invoiceData.customerName || invoiceData.customer_name || 'Guest'
+        const customerEmail = invoiceData.customerEmail || invoiceData.customer_email || ''
+        const eventTitle = invoiceData.title || 'Event'
+        const totalAmount = invoiceData.amount || invoiceData.total || 0
+
+        console.log('👤 Customer:', customerName, customerEmail)
+        console.log('💰 Amount:', totalAmount)
+
+        // Save booking with invoice details
+        const bookingResult = await sql`
+          INSERT INTO bookings 
+          (event_title, customer_name, customer_email, ticket_count, total_amount, invoice_id, payment_reference, status)
+          VALUES (
+            ${eventTitle},
+            ${customerName},
+            ${customerEmail},
+            ${1},
+            ${totalAmount},
+            ${invoiceId},
+            ${reference},
+            'confirmed'
+          )
+          RETURNING *
+        `
+
+        console.log('✅ Booking saved from invoice:', bookingResult[0])
+
+        // Update webhook log with booking info
+        await logWebhook(
+          `payment.${status}`,
+          'payment',
+          invoiceId,
+          'booking_saved',
+          { ...invoiceData, bookingId: bookingResult[0].id },
+          true
+        )
+      } catch (err) {
+        console.error('❌ Error processing payment success:', err.message)
+        await logWebhook(
+          `payment.${status}`,
+          'payment',
+          invoiceId || reference,
+          'error_processing',
+          { error: err.message },
+          true
+        )
+      }
+    }
+    
     // Redirect user back to ticketing page with status
     return {
       statusCode: 302,
       headers: {
-        'Location': `https://toptierxperienz.com/ticketing?status=${status}&reference=${reference}`
+        'Location': `https://toptierxperienz.com/ticketing?status=${status}&reference=${reference}&invoiceId=${invoiceId || ''}`
       }
     }
   }
