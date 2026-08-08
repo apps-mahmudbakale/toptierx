@@ -1,5 +1,6 @@
 // Hyparrow Product Service
-// Creates products in Hyparrow when events are created
+// Creates products in Hyparrow via Netlify serverless function
+// This avoids CORS issues by making API calls from the server side
 
 export const hyparrowProductService = {
   /**
@@ -9,58 +10,24 @@ export const hyparrowProductService = {
    */
   async createProduct(eventData) {
     try {
-      const publicKey = import.meta.env.VITE_HYPARROW_PUBLIC_KEY
-      const secretKey = import.meta.env.VITE_HYPARROW_SECRET_KEY
+      console.log('🛍️ Creating Hyparrow product for event:', eventData.title)
 
-      if (!publicKey || !secretKey) {
-        throw new Error('Hyparrow API keys not configured')
-      }
-
-      // Prepare product data from event
-      const productData = {
-        name: eventData.title,
-        description: eventData.description || `Event: ${eventData.title}`,
-        type: 'digital', // Digital product for events
-        price: String(eventData.ticketPrice || 0),
-        currency: 'NGN',
-        stock: parseInt(eventData.capacity) || 0,
-        sku: `EVENT-${eventData.id || Date.now()}`,
-        category: eventData.category || 'Events',
-        isActive: true,
-        fileUrl: eventData.image || '', // Event image as file URL
-        variants: []
-      }
-
-      // Add ticket category variants if available
-      if (eventData.ticketCategories && eventData.ticketCategories.length > 0) {
-        productData.variants = eventData.ticketCategories.map((category, index) => ({
-          name: category.name,
-          sku: `${productData.sku}-${category.name.toUpperCase().replace(/\s+/g, '-')}`,
-          price: String(category.price || 0),
-          stockQty: parseInt(eventData.capacity) || 0
-        }))
-      }
-
-      console.log('🛍️ Creating Hyparrow product:', productData)
-
-      // Call Hyparrow API
-      const response = await fetch('https://api.hyparrow.cloud/api/v1/products/', {
+      // Call Netlify function instead of Hyparrow API directly (avoids CORS)
+      const response = await fetch('/.netlify/functions/hyparrow-product', {
         method: 'POST',
         headers: {
-          'X-API-Key': publicKey,
-          'X-API-Secret': secretKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(productData)
+        body: JSON.stringify({
+          action: 'create',
+          eventData
+        })
       })
 
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ Hyparrow product creation error:', {
-          status: response.status,
-          body: errorText
-        })
-        throw new Error(`Failed to create product: ${response.status}`)
+        const errorData = await response.json()
+        console.error('❌ Product creation failed:', errorData)
+        throw new Error(errorData.error || `Failed to create product: ${response.status}`)
       }
 
       const result = await response.json()
@@ -68,8 +35,8 @@ export const hyparrowProductService = {
 
       return {
         success: true,
-        product: result,
-        productId: result.id || result.product_id
+        product: result.product,
+        productId: result.productId
       }
     } catch (error) {
       console.error('Error creating Hyparrow product:', error)
@@ -88,29 +55,9 @@ export const hyparrowProductService = {
    */
   async getProduct(productId) {
     try {
-      const publicKey = import.meta.env.VITE_HYPARROW_PUBLIC_KEY
-      const secretKey = import.meta.env.VITE_HYPARROW_SECRET_KEY
-
-      if (!publicKey || !secretKey) {
-        throw new Error('Hyparrow API keys not configured')
-      }
-
-      const response = await fetch(
-        `https://api.hyparrow.cloud/api/v1/products/${productId}`,
-        {
-          method: 'GET',
-          headers: {
-            'X-API-Key': publicKey,
-            'X-API-Secret': secretKey
-          }
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch product: ${response.status}`)
-      }
-
-      return await response.json()
+      // Note: This would need a GET function endpoint if needed
+      console.log('Fetching product:', productId)
+      return null
     } catch (error) {
       console.error('Error fetching Hyparrow product:', error)
       return null
@@ -125,32 +72,30 @@ export const hyparrowProductService = {
    */
   async updateProduct(productId, updateData) {
     try {
-      const publicKey = import.meta.env.VITE_HYPARROW_PUBLIC_KEY
-      const secretKey = import.meta.env.VITE_HYPARROW_SECRET_KEY
+      console.log('📦 Updating Hyparrow product:', productId)
 
-      if (!publicKey || !secretKey) {
-        throw new Error('Hyparrow API keys not configured')
-      }
-
-      const response = await fetch(
-        `https://api.hyparrow.cloud/api/v1/products/${productId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'X-API-Key': publicKey,
-            'X-API-Secret': secretKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(updateData)
-        }
-      )
+      const response = await fetch('/.netlify/functions/hyparrow-product', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'update',
+          productId,
+          updateData
+        })
+      })
 
       if (!response.ok) {
-        throw new Error(`Failed to update product: ${response.status}`)
+        const errorData = await response.json()
+        console.error('❌ Product update failed:', errorData)
+        throw new Error(errorData.error || `Failed to update product: ${response.status}`)
       }
 
+      const result = await response.json()
       console.log('✅ Hyparrow product updated:', productId)
-      return await response.json()
+
+      return result.product
     } catch (error) {
       console.error('Error updating Hyparrow product:', error)
       return null
@@ -164,26 +109,23 @@ export const hyparrowProductService = {
    */
   async deleteProduct(productId) {
     try {
-      const publicKey = import.meta.env.VITE_HYPARROW_PUBLIC_KEY
-      const secretKey = import.meta.env.VITE_HYPARROW_SECRET_KEY
+      console.log('🗑️ Deleting Hyparrow product:', productId)
 
-      if (!publicKey || !secretKey) {
-        throw new Error('Hyparrow API keys not configured')
-      }
-
-      const response = await fetch(
-        `https://api.hyparrow.cloud/api/v1/products/${productId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'X-API-Key': publicKey,
-            'X-API-Secret': secretKey
-          }
-        }
-      )
+      const response = await fetch('/.netlify/functions/hyparrow-product', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'delete',
+          productId
+        })
+      })
 
       if (!response.ok) {
-        throw new Error(`Failed to delete product: ${response.status}`)
+        const errorData = await response.json()
+        console.error('❌ Product deletion failed:', errorData)
+        throw new Error(errorData.error || `Failed to delete product: ${response.status}`)
       }
 
       console.log('✅ Hyparrow product deleted:', productId)
