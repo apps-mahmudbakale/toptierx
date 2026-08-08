@@ -40,14 +40,15 @@ export const hyparrowInvoiceService = {
         })
       })
 
+      const result = await response.json()
+      console.log('📦 Server response:', JSON.stringify(result, null, 2))
+
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('❌ Invoice creation failed:', errorData)
-        throw new Error(errorData.error || `Failed to create invoice: ${response.status}`)
+        console.error('❌ Invoice creation failed:', result)
+        throw new Error(result.error || `Failed to create invoice: ${response.status}`)
       }
 
-      const result = await response.json()
-      console.log('✅ Hyparrow invoice created:', result)
+      console.log('✅ Hyparrow invoice created')
 
       return {
         success: true,

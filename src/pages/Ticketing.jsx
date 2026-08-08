@@ -205,7 +205,7 @@ export default function Ticketing() {
         total_amount: bookingDataToCreate.totalAmount
       })
 
-      console.log('📊 Invoice result:', invoiceResult.invoice.data.id)
+      console.log('📊 Invoice result:', invoiceResult)
 
       if (!invoiceResult.success) {
         console.error('❌ Invoice creation failed:', invoiceResult.error)
@@ -213,16 +213,16 @@ export default function Ticketing() {
       }
 
       if (!invoiceResult.invoiceId) {
-        console.error('❌ No invoice ID returned')
+        console.error('❌ No invoice ID returned:', invoiceResult)
         throw new Error('Invoice created but no ID returned')
       }
 
-      console.log('✅ Invoice created:', invoiceResult)
+      console.log('✅ Invoice created with ID:', invoiceResult.invoiceId)
       
       // Step 2: Store both booking and invoice data for after payment
       const completeData = {
         ...bookingDataToCreate,
-        invoiceId: invoiceResult.invoice.data.id
+        invoiceId: invoiceResult.invoiceId
       }
       
       sessionStorage.setItem('_pendingBooking', JSON.stringify(completeData))
@@ -232,7 +232,7 @@ export default function Ticketing() {
       if (invoiceResult.checkoutUrl) {
         // Use invoice checkout URL
         console.log('🔄 Redirecting to invoice payment:', invoiceResult.checkoutUrl)
-        window.location.href = `https://checkout.hyparrow.com/pay/${invoiceResult.invoice.data.id}`;
+        window.location.href = invoiceResult.checkoutUrl
       } else {
         // If no checkout URL in local dev, show error
         throw new Error('Unable to proceed to payment. Please try again.')

@@ -1,0 +1,27 @@
+# Allow all search engines
+User-agent: *
+Allow: /
+Disallow: /.netlify/
+Disallow: /admin/
+Disallow: /api/
+
+# Specific search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Slow down aggressive crawlers
+User-agent: MJ12bot
+Crawl-delay: 10
+
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+# Sitemaps
+Sitemap: https://toptierxperienz.com/sitemap.xml
+
+# Cache control
+User-agent: *
+Cache-control: public

@@ -80,14 +80,24 @@ export default async (req, context) => {
       }
 
       const result = await response.json()
-      console.log('✅ Hyparrow invoice created:', result)
+      console.log('✅ Hyparrow invoice created:', JSON.stringify(result, null, 2))
+
+      // Extract invoice ID from response
+      const invoiceId = result.id || result.invoice_id || result._id
+      
+      if (!invoiceId) {
+        console.error('❌ No invoice ID in response:', result)
+        throw new Error('Hyparrow API returned invoice but no ID field')
+      }
+
+      console.log('📌 Invoice ID extracted:', invoiceId)
 
       return new Response(
         JSON.stringify({
           success: true,
           invoice: result,
-          invoiceId: result.id || result.invoice_id,
-          checkoutUrl: `https://checkout.hyparrow.com/pay/${result.id || result.invoice_id}`
+          invoiceId: invoiceId,
+          checkoutUrl: `https://checkout.hyparrow.com/pay/${invoiceId}`
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       )
