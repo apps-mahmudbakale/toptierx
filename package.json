@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "server": "node server.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
-    "seed:users": "node seed-users.js"
+    "seed:users": "node seed-users.js",
+    "migrate:add-product-id": "node run-add-product-id.js",
+    "sync:events": "node sync-existing-events.js"
   },
   "keywords": [],
   "author": "",

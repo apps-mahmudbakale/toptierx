@@ -51,7 +51,7 @@ export const neonService = {
     try {
       const result = await sql`
         INSERT INTO events 
-        (title, category, date, time, venue, capacity, ticket_price, image, description, itinerary, ticket_categories, payment_link_identifier)
+        (title, category, date, time, venue, capacity, ticket_price, image, description, itinerary, ticket_categories, payment_link_identifier, hyparrow_product_id)
         VALUES (
           ${eventData.title},
           ${eventData.category || null},
@@ -64,7 +64,8 @@ export const neonService = {
           ${eventData.description || null},
           ${JSON.stringify(eventData.itinerary || [])},
           ${JSON.stringify(eventData.ticketCategories || [])},
-          ${eventData.paymentLinkIdentifier || null}
+          ${eventData.paymentLinkIdentifier || null},
+          ${eventData.hyparrowProductId || null}
         )
         RETURNING *
       `
@@ -76,6 +77,7 @@ export const neonService = {
         ...event,
         ticketPrice: event.ticket_price,
         paymentLinkIdentifier: event.payment_link_identifier,
+        hyparrowProductId: event.hyparrow_product_id,
         ticketCategories: typeof event.ticket_categories === 'string'
           ? JSON.parse(event.ticket_categories)
           : (event.ticket_categories || []),
@@ -106,6 +108,7 @@ export const neonService = {
           itinerary = ${JSON.stringify(eventData.itinerary || [])},
           ticket_categories = ${JSON.stringify(eventData.ticketCategories || [])},
           payment_link_identifier = ${eventData.paymentLinkIdentifier || null},
+          hyparrow_product_id = ${eventData.hyparrowProductId || null},
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ${id}
         RETURNING *
@@ -118,6 +121,7 @@ export const neonService = {
         ...event,
         ticketPrice: event.ticket_price,
         paymentLinkIdentifier: event.payment_link_identifier,
+        hyparrowProductId: event.hyparrow_product_id,
         ticketCategories: typeof event.ticket_categories === 'string'
           ? JSON.parse(event.ticket_categories)
           : (event.ticket_categories || []),
