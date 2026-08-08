@@ -27,7 +27,37 @@ const logWebhook = async (webhookEvent, eventType, invoiceId, status, payload, s
 }
 
 export const handler = async (event) => {
-  // Only accept POST requests
+  // Handle GET requests (browser redirects from Hyparrow after payment)
+  if (event.httpMethod === 'GET') {
+    console.log('🔄 Webhook redirect from Hyparrow (GET request)')
+    console.log('📊 Query params:', event.queryStringParameters)
+    
+    // Hyparrow redirects with query params like: ?status=success&reference=XXX
+    const { status, reference, invoiceId } = event.queryStringParameters || {}
+    
+    console.log('✅ Payment status:', status)
+    console.log('📌 Payment reference:', reference)
+    
+    // Log the redirect
+    await logWebhook(
+      `payment.${status}`,
+      'payment',
+      invoiceId || reference,
+      status,
+      { status, reference, invoiceId },
+      true
+    )
+    
+    // Redirect user back to ticketing page with status
+    return {
+      statusCode: 302,
+      headers: {
+        'Location': `https://toptierxperienz.com/ticketing?status=${status}&reference=${reference}`
+      }
+    }
+  }
+
+  // Handle POST requests (webhook events from Hyparrow)
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
