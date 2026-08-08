@@ -69,6 +69,8 @@ export default async (req, context) => {
 
       console.log('🛍️ Product operation:', JSON.stringify(productData, null, 2))
 
+      console.log('Product ID:', productData.product);
+
       // Check if we have an existing product ID to update
       const hyparrowProductId = eventData.hyparrowProductId
       console.log('📦 Existing product ID:', hyparrowProductId)
