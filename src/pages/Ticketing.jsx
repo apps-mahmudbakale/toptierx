@@ -135,9 +135,6 @@ export default function Ticketing() {
     )
   }
 
-  // Generate payment link identifier from event if not provided
-  const paymentLinkIdentifier = event.paymentLinkIdentifier || `event-${event.id}-${Date.now()}`
-
   // Use ticket categories if available, otherwise create default
   const ticketTiers = event.ticketCategories && event.ticketCategories.length > 0 
     ? event.ticketCategories.map((cat, idx) => ({

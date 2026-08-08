@@ -44,7 +44,7 @@ export default async (req, context) => {
           {
             description: `${bookingData.event_title} - ${bookingData.ticket_count} ticket(s)`,
             quantity: parseInt(bookingData.ticket_count) || 1,
-            unitPrice: Math.round(parseFloat(bookingData.ticket_price) * 100) // Convert to cents
+            unitPrice: parseFloat(bookingData.ticket_price) // Direct price, no conversion
           }
         ]
       }
