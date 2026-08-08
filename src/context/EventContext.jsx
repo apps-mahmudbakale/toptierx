@@ -45,7 +45,7 @@ export function EventProvider({ children }) {
       const newEvent = await neonService.createEvent(eventWithProduct)
       setEvents(prev => [newEvent, ...prev])
       
-      console.log('✅ Event and Hyparrow product created successfully')
+      console.log(`✅ Event and Hyparrow product ${productResult.action === 'updated' ? 'updated' : 'created'} successfully`)
       return newEvent
     } catch (err) {
       console.error('Error adding event:', err.message)
@@ -61,36 +61,22 @@ export function EventProvider({ children }) {
       
       let eventWithProduct = updatedEvent
 
-      // If event doesn't have a Hyparrow product ID, create one now
-      if (!existingEvent?.hyparrowProductId) {
-        console.log('🛍️ Creating Hyparrow product for existing event...')
-        const productResult = await hyparrowProductService.createProduct({
-          ...updatedEvent,
-          id: id
-        })
-        
-        eventWithProduct = {
-          ...updatedEvent,
-          hyparrowProductId: productResult.productId || null
-        }
-        console.log('✅ Product created for existing event:', productResult.productId)
-      } else {
-        // If product already exists, update it in Hyparrow
-        console.log('📦 Updating Hyparrow product...')
-        const productData = {
-          name: updatedEvent.title,
-          description: updatedEvent.description,
-          price: String(updatedEvent.ticketPrice || 0),
-          stock: parseInt(updatedEvent.capacity) || 0
-        }
-        
-        await hyparrowProductService.updateProduct(existingEvent.hyparrowProductId, productData)
+      console.log('📦 Syncing product with Hyparrow...')
+      const productResult = await hyparrowProductService.createProduct({
+        ...updatedEvent,
+        id: id,
+        hyparrowProductId: existingEvent?.hyparrowProductId || null
+      })
+      
+      if (productResult.action === 'updated') {
         console.log('✅ Hyparrow product updated')
-        
-        eventWithProduct = {
-          ...updatedEvent,
-          hyparrowProductId: existingEvent.hyparrowProductId
-        }
+      } else {
+        console.log('✅ Hyparrow product created for existing event')
+      }
+      
+      eventWithProduct = {
+        ...updatedEvent,
+        hyparrowProductId: productResult.productId || existingEvent?.hyparrowProductId
       }
 
       // Update event in Neon

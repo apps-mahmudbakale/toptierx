@@ -33,7 +33,10 @@ export const hyparrowProductService = {
         },
         body: JSON.stringify({
           action: 'create',
-          eventData
+          eventData: {
+            ...eventData,
+            hyparrowProductId: eventData.hyparrowProductId || null // Pass existing ID if available
+          }
         })
       })
 
@@ -44,12 +47,13 @@ export const hyparrowProductService = {
       }
 
       const result = await response.json()
-      console.log('✅ Hyparrow product created:', result)
+      console.log('✅ Hyparrow product', result.action === 'updated' ? 'updated' : 'created', ':', result)
 
       return {
         success: true,
         product: result.product,
-        productId: result.productId
+        productId: result.productId,
+        action: result.action
       }
     } catch (error) {
       console.error('Error creating Hyparrow product:', error)
