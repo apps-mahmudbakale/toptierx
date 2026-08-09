@@ -1,5 +1,4 @@
 import { createContext, useState, useCallback, useEffect } from 'react'
-import { sql } from '../services/db'
 
 export const AuthContext = createContext()
 
@@ -24,43 +23,39 @@ export function AuthProvider({ children }) {
     try {
       console.log('🔐 Authenticating user:', email)
       
-      // Query user from Neon database
-      const result = await sql`
-        SELECT id, email, password, role, created_at 
-        FROM users 
-        WHERE email = ${email}
-      `
+      // Call Netlify function for secure password verification
+      const endpoint = '/.netlify/functions/auth-login'
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      })
 
-      if (result.length === 0) {
-        console.log('❌ User not found:', email)
-        return { success: false, error: 'Invalid email or password' }
+      console.log('📊 Auth response status:', response.status)
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.log('❌ Authentication failed:', data.error)
+        return { success: false, error: data.error || 'Invalid email or password' }
       }
 
-      const dbUser = result[0]
-      
-      // Simple password comparison (not ideal for production)
-      // For production, implement backend authentication with proper bcrypt hashing
-      if (password !== dbUser.password) {
-        // Try comparing as plaintext for now
-        console.log('❌ Password mismatch for user:', email)
-        return { success: false, error: 'Invalid email or password' }
+      if (!data.success || !data.user) {
+        console.log('❌ No user data returned')
+        return { success: false, error: 'Authentication failed' }
       }
 
       console.log('✅ User authenticated:', email)
       
-      const userData = {
-        id: dbUser.id,
-        email: dbUser.email,
-        role: dbUser.role || 'user',
-        createdAt: dbUser.created_at
-      }
-
-      setUser(userData)
-      localStorage.setItem('toptier_user', JSON.stringify(userData))
+      setUser(data.user)
+      localStorage.setItem('toptier_user', JSON.stringify(data.user))
       
-      return { success: true, user: userData }
+      return { success: true, user: data.user }
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('❌ Login error:', error)
       return { success: false, error: 'Login failed. Please try again.' }
     }
   }, [])
