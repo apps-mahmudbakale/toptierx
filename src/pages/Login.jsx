@@ -16,15 +16,21 @@ export default function Login() {
     setError('')
     setLoading(true)
 
-    const result = login(email, password)
-    
-    if (result.success) {
-      navigate('/dashboard')
-    } else {
-      setError(result.error)
+    try {
+      const result = await login(email, password)
+      
+      if (result.success) {
+        console.log('✅ Login successful, redirecting to dashboard...')
+        navigate('/dashboard')
+      } else {
+        setError(result.error || 'Login failed')
+      }
+    } catch (err) {
+      console.error('❌ Login error:', err)
+      setError('Login failed. Please try again.')
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
