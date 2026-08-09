@@ -38,7 +38,7 @@ export default async (req, context) => {
           .split('T')[0], // 7 days from now
         tax_direction: 'customer',
         vat_direction: 'customer',
-        service_fee_direction: 'customer',
+        service_fee_direction: 'merchant',
         taxType: 'percentage',
         taxRate: 0, // No tax by default
         checkoutCallbackUrl: `${process.env.URL || 'https://toptierxperienz.com'}/.netlify/functions/hyparrow-webhook`,
