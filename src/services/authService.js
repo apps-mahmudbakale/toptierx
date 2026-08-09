@@ -1,5 +1,4 @@
 import { sql } from './db'
-import bcrypt from 'bcrypt'
 
 export const authService = {
   /**
@@ -10,42 +9,38 @@ export const authService = {
    */
   async login(email, password) {
     try {
-      // Query user from Neon database
-      const result = await sql`
-        SELECT id, email, password, role, created_at 
-        FROM users 
-        WHERE email = ${email}
-      `
+      console.log('🔐 Authenticating user:', email)
 
-      if (result.length === 0) {
-        console.log('❌ User not found:', email)
+      // Check if we're in production (deployed) or local dev
+      const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      
+      // Use Netlify function for password verification
+      const endpoint = isDev ? '/.netlify/functions/auth-login' : '/.netlify/functions/auth-login'
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.log('❌ Authentication failed:', data.error)
         return null
       }
 
-      const user = result[0]
-      
-      // Verify password with bcrypt
-      // Note: In browser, we can't use bcrypt directly for hashing
-      // This is a simplified comparison - for production, use a backend endpoint
-      const passwordMatch = await bcrypt.compare(password, user.password)
-
-      if (!passwordMatch) {
-        console.log('❌ Password mismatch for user:', email)
-        return null
+      if (data.success && data.user) {
+        console.log('✅ User authenticated:', email)
+        return data.user
       }
 
-      console.log('✅ User authenticated:', email)
-      
-      // Return user data without password
-      return {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        createdAt: user.created_at
-      }
+      return null
     } catch (error) {
       console.error('Error authenticating user:', error)
-      throw error
+      return null
     }
   },
 

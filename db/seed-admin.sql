@@ -2,12 +2,12 @@
 -- Email: admin@toptierxperienze.com
 -- Password: Admin@123 (hashed with bcrypt)
 INSERT INTO users (email, password, role) 
-VALUES ('admin@toptierxperienze.com', '$2b$10$VXu5kYNz3qJfKJxmCEG7g.W5JAO5J5F5D8X0j0Z3Z4Q9K9K9K9K9K', 'admin')
-ON CONFLICT (email) DO NOTHING;
+VALUES ('admin@toptierxperienze.com', '$2b$10$PHGioGVS5HAA.MTQ1aoanuexhFmK2nNfBVGuNc5EseTdbuJ9KwNvW', 'admin')
+ON CONFLICT (email) DO UPDATE SET password = '$2b$10$PHGioGVS5HAA.MTQ1aoanuexhFmK2nNfBVGuNc5EseTdbuJ9KwNvW';
 
 -- Alternative user for testing
 -- Email: user@toptierxperienze.com  
 -- Password: User@123 (hashed with bcrypt)
 INSERT INTO users (email, password, role)
-VALUES ('user@toptierxperienze.com', '$2b$10$HK9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9K9KK', 'user')
-ON CONFLICT (email) DO NOTHING;
+VALUES ('user@toptierxperienze.com', '$2b$10$TQ3sSCWL75PnYAeywItbzeZcJe20wqpalTOJauCvY72u0/KAlBrP.', 'user')
+ON CONFLICT (email) DO UPDATE SET password = '$2b$10$TQ3sSCWL75PnYAeywItbzeZcJe20wqpalTOJauCvY72u0/KAlBrP.';
